@@ -495,7 +495,8 @@
     <div class="sidebar-section">
       <div class="sidebar-label">// LAUNCH SOFTWARE</div>
       <input class="cmd-input" id="app-path" placeholder="C:\App\program.exe" />
-      <button class="send-btn" onclick="sendLaunch()">▶ LAUNCH ON TARGET</button>
+      <button class="send-btn" onclick="sendLaunch()" style="margin-bottom:6px">▶ LAUNCH ONLY</button>
+      <button class="send-btn" onclick="sendLaunchAndEnter()" style="background:linear-gradient(135deg,rgba(0,204,255,0.15),rgba(0,255,136,0.1));border-color:var(--accent2);color:var(--accent2)">⏎ LAUNCH + 2x ENTER</button>
     </div>
 
     <div class="sidebar-section">
@@ -707,6 +708,20 @@ function sendLaunch() {
   const path = document.getElementById('app-path').value.trim();
   if(!path) { notify('Enter app path!', true); return; }
   sendCmd('launch', {path});
+}
+
+function sendLaunchAndEnter() {
+  const path = document.getElementById("app-path").value.trim();
+  if(!path) { notify("Enter app path!", true); return; }
+  sendCmd("launch_and_enter", {path, wait1: 7, wait2: 5});
+  notify("⏎ Launch + 2x Enter sent!");
+}
+
+function sendLaunchAndEnter() {
+  const path = document.getElementById("app-path").value.trim();
+  if(!path) { notify("Enter app path!", true); return; }
+  sendCmd("launch_and_enter", {path, wait1: 7, wait2: 4});
+  notify("⏎ Launch + 2x Enter sent!");
 }
 
 function sendCustom() {
