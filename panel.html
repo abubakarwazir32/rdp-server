@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDP Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090c10;
+    --bg2: #0d1117;
+    --bg3: #161b22;
+    --border: #21262d;
+    --accent: #00ff88;
+    --accent2: #00ccff;
+    --accent3: #ff6b35;
+    --warn: #ffcc00;
+    --red: #ff4444;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --online: #00ff88;
+    --offline: #ff4444;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Rajdhani', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.015) 2px, rgba(0,255,136,0.015) 4px);
+    pointer-events:none;
+    z-index:9999;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top:0; z-index:100;
+  }
+  .logo {
+    display:flex; align-items:center; gap:10px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .logo-icon {
+    width:32px; height:32px;
+    border: 2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+    box-shadow: 0 0 12px rgba(0,255,136,0.4);
+    animation: pulse-border 2s infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 12px rgba(0,255,136,0.4); }
+    50% { box-shadow: 0 0 24px rgba(0,255,136,0.8), inset 0 0 8px rgba(0,255,136,0.1); }
+  }
+  .topbar-stats {
+    display:flex; gap:24px; align-items:center;
+  }
+  .stat-pill {
+    display:flex; align-items:center; gap:6px;
+    font-family: var(--font-mono);
+    font-size:13px;
+    color: var(--muted);
+  }
+  .stat-pill span { color: var(--accent); font-weight:bold; }
+  .stat-pill.warn span { color: var(--warn); }
+  .stat-pill.red span { color: var(--red); }
+  .live-dot {
+    width:8px; height:8px; border-radius:50%;
+    background: var(--accent);
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* LAYOUT */
+  .layout {
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: auto 1fr;
+    height: calc(100vh - 56px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display:flex; flex-direction:column;
+    grid-row: 1 / 3;
+    overflow-y:auto;
+  }
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* COMMAND BUTTONS */
+  .cmd-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  }
+  .cmd-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    letter-spacing:0.5px;
+  }
+  .cmd-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,136,0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,255,136,0.15);
+  }
+  .cmd-btn.danger:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(255,68,68,0.05);
+    box-shadow: 0 4px 16px rgba(255,68,68,0.15);
+  }
+  .cmd-btn.warn-btn:hover {
+    border-color: var(--warn);
+    color: var(--warn);
+    background: rgba(255,204,0,0.05);
+    box-shadow: 0 4px 16px rgba(255,204,0,0.15);
+  }
+  .cmd-btn .icon { font-size:20px; }
+
+  /* TARGET SELECTOR */
+  .target-select {
+    width:100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size:13px;
+    padding: 8px 12px;
+    margin-bottom:10px;
+    outline:none;
+    cursor:pointer;
+  }
+  .target-select:focus { border-color: var(--accent2); }
+
+  /* CUSTOM COMMAND */
+  .cmd-input {
+    width:100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size:13px;
+    padding: 8px 12px;
+    outline:none;
+    margin-bottom:8px;
+  }
+  .cmd-input::placeholder { color: var(--muted); }
+  .cmd-input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,136,0.2); }
+  .send-btn {
+    width:100%;
+    background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,204,255,0.1));
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size:13px;
+    padding: 9px;
+    cursor:pointer;
+    letter-spacing:2px;
+    transition: all 0.2s;
+  }
+  .send-btn:hover {
+    background: rgba(0,255,136,0.2);
+    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+  }
+
+  /* MAIN AREA */
+  .main {
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+
+  /* TABS */
+  .tabs {
+    display:flex; gap:0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+  .tab {
+    font-family: var(--font-mono);
+    font-size:13px;
+    padding: 14px 20px;
+    color: var(--muted);
+    cursor:pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing:1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* AGENTS GRID */
+  .content {
+    flex:1; overflow-y:auto;
+    padding: 16px;
+  }
+  .agents-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap:12px;
+  }
+
+  /* AGENT CARD */
+  .agent-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position:relative;
+    overflow:hidden;
+  }
+  .agent-card::before {
+    content:'';
+    position:absolute; left:0; top:0; bottom:0;
+    width:3px;
+    background: var(--online);
+    transition: background 0.3s;
+  }
+  .agent-card.offline::before { background: var(--offline); }
+  .agent-card:hover {
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,204,255,0.1);
+  }
+  .agent-card.selected {
+    border-color: var(--accent);
+    background: rgba(0,255,136,0.04);
+    box-shadow: 0 0 20px rgba(0,255,136,0.1);
+  }
+
+  .agent-header {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .agent-name {
+    font-family: var(--font-mono);
+    font-size:15px;
+    color: var(--accent2);
+    font-weight:bold;
+  }
+  .agent-id {
+    font-family: var(--font-mono);
+    font-size:11px;
+    color: var(--muted);
+    margin-top:2px;
+  }
+  .status-badge {
+    font-family: var(--font-mono);
+    font-size:11px;
+    padding: 3px 8px;
+    border-radius:2px;
+    letter-spacing:1px;
+  }
+  .status-badge.online {
+    background: rgba(0,255,136,0.1);
+    color: var(--online);
+    border: 1px solid rgba(0,255,136,0.3);
+  }
+  .status-badge.offline {
+    background: rgba(255,68,68,0.1);
+    color: var(--offline);
+    border: 1px solid rgba(255,68,68,0.3);
+  }
+
+  .agent-info {
+    font-size:13px;
+    color: var(--muted);
+    margin-bottom:10px;
+    line-height:1.6;
+  }
+  .agent-info strong { color: var(--text); }
+
+  /* RESOURCE BARS */
+  .res-bars { display:flex; flex-direction:column; gap:5px; }
+  .res-row { display:flex; align-items:center; gap:8px; font-size:12px; font-family:var(--font-mono); }
+  .res-label { color: var(--muted); width:36px; }
+  .res-bar-bg {
+    flex:1; height:4px;
+    background: var(--border);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .res-bar-fill {
+    height:100%;
+    border-radius:2px;
+    transition: width 0.5s;
+  }
+  .res-bar-fill.cpu { background: var(--accent2); }
+  .res-bar-fill.ram { background: var(--accent); }
+  .res-bar-fill.disk { background: var(--warn); }
+  .res-val { color:var(--text); width:32px; text-align:right; font-size:11px; }
+
+  .last-seen {
+    font-family: var(--font-mono);
+    font-size:11px;
+    color: var(--muted);
+    margin-top:8px;
+  }
+
+  /* SCREENSHOT MODAL */
+  .modal-overlay {
+    display:none;
+    position:fixed; inset:0;
+    background: rgba(0,0,0,0.85);
+    z-index:1000;
+    justify-content:center;
+    align-items:center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    padding: 24px;
+    max-width: 90vw;
+    max-height: 90vh;
+    display:flex; flex-direction:column; gap:12px;
+    box-shadow: 0 0 60px rgba(0,255,136,0.2);
+  }
+  .modal-header {
+    display:flex; justify-content:space-between; align-items:center;
+    font-family: var(--font-mono);
+    font-size:14px;
+    color: var(--accent);
+    letter-spacing:2px;
+  }
+  .modal-close {
+    background:none; border:none; color:var(--red);
+    font-size:20px; cursor:pointer;
+  }
+  .modal img {
+    max-width:100%; max-height:70vh;
+    object-fit:contain;
+    border: 1px solid var(--border);
+  }
+  .modal-actions { display:flex; gap:8px; }
+  .modal-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size:12px;
+    padding: 8px 16px;
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .modal-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* LOG */
+  .log-area {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    height: 140px;
+    overflow-y:auto;
+    padding: 8px 16px;
+    font-family: var(--font-mono);
+    font-size:12px;
+  }
+  .log-line {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display:flex; gap:12px;
+  }
+  .log-time { color: var(--muted); white-space:nowrap; }
+  .log-msg { color: var(--text); }
+  .log-msg.ok { color: var(--accent); }
+  .log-msg.err { color: var(--red); }
+  .log-msg.info { color: var(--accent2); }
+  .log-msg.warn { color: var(--warn); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align:center;
+    padding: 80px 20px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .empty-state .big { font-size:48px; margin-bottom:16px; }
+  .empty-state .title { font-size:16px; color: var(--text); margin-bottom:8px; }
+
+  /* NOTIFICATION */
+  .notif {
+    position:fixed; bottom:20px; right:20px;
+    background: var(--bg3);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size:13px;
+    padding: 12px 20px;
+    z-index:9999;
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    box-shadow: 0 0 20px rgba(0,255,136,0.2);
+  }
+  .notif.err { border-color:var(--red); color:var(--red); }
+  @keyframes slideIn { from{transform:translateX(120%); opacity:0} to{transform:translateX(0); opacity:1} }
+  @keyframes fadeOut { to{opacity:0; transform:translateX(120%)} }
+
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    RDP // COMMAND CENTER
+  </div>
+  <div class="topbar-stats">
+    <div class="live-dot"></div>
+    <div class="stat-pill">TOTAL: <span id="stat-total">0</span></div>
+    <div class="stat-pill">ONLINE: <span id="stat-online">0</span></div>
+    <div class="stat-pill warn">OFFLINE: <span id="stat-offline">0</span></div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// TARGET</div>
+      <select class="target-select" id="target-select">
+        <option value="all">⬡ ALL MACHINES</option>
+      </select>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// QUICK COMMANDS</div>
+      <div class="cmd-grid">
+        <button class="cmd-btn" onclick="sendCmd('screenshot')">
+          <span class="icon">📸</span>SCREENSHOT
+        </button>
+        <button class="cmd-btn" onclick="sendCmd('get_info')">
+          <span class="icon">📊</span>SYSINFO
+        </button>
+        <button class="cmd-btn warn-btn" onclick="sendCmd('restart')">
+          <span class="icon">🔄</span>RESTART
+        </button>
+        <button class="cmd-btn danger" onclick="sendCmd('shutdown')">
+          <span class="icon">⏻</span>SHUTDOWN
+        </button>
+        <button class="cmd-btn" onclick="sendCmd('lock')">
+          <span class="icon">🔒</span>LOCK
+        </button>
+        <button class="cmd-btn" onclick="openFileModal()">
+          <span class="icon">📂</span>RUN FILE
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// LAUNCH SOFTWARE</div>
+      <input class="cmd-input" id="app-path" placeholder="C:\App\program.exe" />
+      <button class="send-btn" onclick="sendLaunch()">▶ LAUNCH ON TARGET</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// CUSTOM COMMAND</div>
+      <input class="cmd-input" id="custom-cmd" placeholder="cmd /c ipconfig" />
+      <button class="send-btn" onclick="sendCustom()">⚡ EXECUTE</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">// MESSAGE BOX</div>
+      <input class="cmd-input" id="msg-text" placeholder="Message to show..." />
+      <button class="send-btn" onclick="sendMessage()">💬 SEND MSG</button>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('agents', this)">MACHINES</div>
+      <div class="tab" onclick="switchTab('screenshots', this)">SCREENSHOTS</div>
+    </div>
+
+    <div class="content" id="content">
+      <!-- agents or screenshots rendered here -->
+    </div>
+
+    <!-- LOG -->
+    <div class="log-area" id="log"></div>
+  </div>
+</div>
+
+<!-- SCREENSHOT MODAL -->
+<div class="modal-overlay" id="ss-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">SCREENSHOT</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <img id="modal-img" src="" alt="Screenshot" />
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="refreshSS()">🔄 Refresh</button>
+      <button class="modal-btn" onclick="downloadSS()">💾 Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE RUN MODAL -->
+<div class="modal-overlay" id="file-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span>RUN FILE ON TARGET</span>
+      <button class="modal-close" onclick="document.getElementById('file-modal').classList.remove('open')">✕</button>
+    </div>
+    <input class="cmd-input" id="file-path" placeholder="C:\path\to\file.exe or script.bat" style="width:400px" />
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="sendRunFile()" style="border-color:var(--accent);color:var(--accent)">▶ RUN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+let allAgents = [];
+let selectedAgent = null;
+let currentTab = 'agents';
+let modalAgentId = null;
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className='log-line';
+  const t = new Date().toLocaleTimeString();
+  line.innerHTML = `<span class="log-time">[${t}]</span><span class="log-msg ${type}">${msg}</span>`;
+  el.insertBefore(line, el.firstChild);
+  if(el.children.length > 100) el.removeChild(el.lastChild);
+}
+
+function notify(msg, err=false) {
+  document.querySelectorAll('.notif').forEach(n=>n.remove());
+  const n = document.createElement('div');
+  n.className = 'notif' + (err?' err':'');
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(), 3100);
+}
+
+// FETCH AGENTS
+async function fetchAgents() {
+  try {
+    const r = await fetch(`${BASE}/api/agents`);
+    allAgents = await r.json();
+    updateStats();
+    updateTargetSelect();
+    if(currentTab === 'agents') renderAgents();
+    else renderScreenshots();
+  } catch(e) { log('Server connection failed', 'err'); }
+}
+
+function updateStats() {
+  const online = allAgents.filter(a=>a.status==='online').length;
+  document.getElementById('stat-total').textContent = allAgents.length;
+  document.getElementById('stat-online').textContent = online;
+  document.getElementById('stat-offline').textContent = allAgents.length - online;
+}
+
+function updateTargetSelect() {
+  const sel = document.getElementById('target-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">⬡ ALL MACHINES</option>';
+  allAgents.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.status==='online'?'●':'○'} ${a.hostname} [${a.id}]`;
+    sel.appendChild(opt);
+  });
+  if(cur) sel.value = cur;
+}
+
+function renderAgents() {
+  const el = document.getElementById('content');
+  if(!allAgents.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big">📡</div><div class="title">NO AGENTS CONNECTED</div><div>Deploy the .exe agent on your RDP machines</div></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="agents-grid">${allAgents.map(agentCard).join('')}</div>`;
+}
+
+function agentCard(a) {
+  const isOff = a.status === 'offline';
+  const cpu = a.cpu || 0, ram = a.ram || 0, disk = a.disk || 0;
+  const lastSeen = a.last_seen ? timeSince(a.last_seen) : 'Never';
+  return `
+  <div class="agent-card ${isOff?'offline':''} ${selectedAgent===a.id?'selected':''}" onclick="selectAgent('${a.id}')">
+    <div class="agent-header">
+      <div>
+        <div class="agent-name">${a.hostname}</div>
+        <div class="agent-id">ID: ${a.id} &nbsp;|&nbsp; ${a.username}</div>
+      </div>
+      <div class="status-badge ${a.status}">${a.status.toUpperCase()}</div>
+    </div>
+    <div class="agent-info">
+      <strong>IP:</strong> ${a.ip} &nbsp;&nbsp; <strong>OS:</strong> ${a.os}
+    </div>
+    <div class="res-bars">
+      <div class="res-row"><span class="res-label">CPU</span><div class="res-bar-bg"><div class="res-bar-fill cpu" style="width:${cpu}%"></div></div><span class="res-val">${cpu}%</span></div>
+      <div class="res-row"><span class="res-label">RAM</span><div class="res-bar-bg"><div class="res-bar-fill ram" style="width:${ram}%"></div></div><span class="res-val">${ram}%</span></div>
+      <div class="res-row"><span class="res-label">DISK</span><div class="res-bar-bg"><div class="res-bar-fill disk" style="width:${disk}%"></div></div><span class="res-val">${disk}%</span></div>
+    </div>
+    <div class="last-seen">Last seen: ${lastSeen}</div>
+    <div style="margin-top:10px;display:flex;gap:6px">
+      <button onclick="event.stopPropagation();viewScreenshot('${a.id}')" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">📸 SCREENSHOT</button>
+      <button onclick="event.stopPropagation();quickCmd('${a.id}','restart')" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px;cursor:pointer;" onmouseover="this.style.borderColor='var(--warn)';this.style.color='var(--warn)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🔄 RESTART</button>
+    </div>
+  </div>`;
+}
+
+function renderScreenshots() {
+  const el = document.getElementById('content');
+  el.innerHTML = `<div class="agents-grid">${allAgents.map(ssCard).join('')}</div>`;
+}
+
+function ssCard(a) {
+  return `
+  <div class="agent-card ${a.status==='offline'?'offline':''}" onclick="viewScreenshot('${a.id}')">
+    <div class="agent-header">
+      <div><div class="agent-name">${a.hostname}</div><div class="agent-id">${a.id}</div></div>
+      <div class="status-badge ${a.status}">${a.status.toUpperCase()}</div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;cursor:pointer;margin-top:8px;">
+      Click to view screenshot
+    </div>
+  </div>`;
+}
+
+function selectAgent(id) {
+  selectedAgent = selectedAgent === id ? null : id;
+  document.getElementById('target-select').value = selectedAgent || 'all';
+  renderAgents();
+}
+
+// COMMANDS
+function getTarget() {
+  return document.getElementById('target-select').value || 'all';
+}
+
+async function sendCmd(type, payload={}, target=null) {
+  const t = target || getTarget();
+  try {
+    const r = await fetch(`${BASE}/api/command`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({target:t, type, payload})
+    });
+    const d = await r.json();
+    log(`CMD [${type}] → ${t}: ${d.message}`, 'ok');
+    notify(`✓ ${type.toUpperCase()} sent`);
+  } catch(e) {
+    log(`Failed to send ${type}`, 'err');
+    notify('Command failed!', true);
+  }
+}
+
+async function quickCmd(agentId, type) {
+  await sendCmd(type, {}, agentId);
+}
+
+function sendLaunch() {
+  const path = document.getElementById('app-path').value.trim();
+  if(!path) { notify('Enter app path!', true); return; }
+  sendCmd('launch', {path});
+}
+
+function sendCustom() {
+  const cmd = document.getElementById('custom-cmd').value.trim();
+  if(!cmd) { notify('Enter command!', true); return; }
+  sendCmd('shell', {cmd});
+  document.getElementById('custom-cmd').value='';
+}
+
+function sendMessage() {
+  const msg = document.getElementById('msg-text').value.trim();
+  if(!msg) return;
+  sendCmd('message', {text: msg});
+  document.getElementById('msg-text').value='';
+}
+
+function openFileModal() {
+  document.getElementById('file-modal').classList.add('open');
+}
+
+function sendRunFile() {
+  const path = document.getElementById('file-path').value.trim();
+  if(!path) { notify('Enter file path!', true); return; }
+  sendCmd('run_file', {path});
+  document.getElementById('file-modal').classList.remove('open');
+}
+
+// SCREENSHOT
+async function viewScreenshot(agentId) {
+  // Request a fresh one
+  await fetch(`${BASE}/api/request_screenshot`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({target: agentId})
+  });
+  log(`Screenshot requested from ${agentId}`, 'info');
+  modalAgentId = agentId;
+
+  // Poll for result
+  let attempts = 0;
+  const poll = async () => {
+    try {
+      const r = await fetch(`${BASE}/api/screenshot/${agentId}`);
+      if(r.ok) {
+        const d = await r.json();
+        const modal = document.getElementById('ss-modal');
+        const img = document.getElementById('modal-img');
+        const title = document.getElementById('modal-title');
+        const agent = allAgents.find(a=>a.id===agentId);
+        title.textContent = `SCREENSHOT — ${agent?agent.hostname:agentId} [${new Date(d.timestamp).toLocaleTimeString()}]`;
+        img.src = 'data:image/png;base64,' + d.data;
+        modal.classList.add('open');
+        log(`Screenshot received from ${agentId}`, 'ok');
+        return;
+      }
+    } catch(e){}
+    if(++attempts < 15) setTimeout(poll, 500);
+    else { log('Screenshot timeout', 'warn'); notify('Screenshot timeout', true); }
+  };
+  setTimeout(poll, 600);
+}
+
+function refreshSS() {
+  if(modalAgentId) {
+    document.getElementById('ss-modal').classList.remove('open');
+    viewScreenshot(modalAgentId);
+  }
+}
+
+function downloadSS() {
+  const img = document.getElementById('modal-img');
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = `screenshot_${modalAgentId}_${Date.now()}.png`;
+  a.click();
+}
+
+function closeModal() {
+  document.getElementById('ss-modal').classList.remove('open');
+}
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='agents') renderAgents();
+  else renderScreenshots();
+}
+
+function timeSince(isoStr) {
+  const diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
+  if(diff < 5) return 'just now';
+  if(diff < 60) return Math.round(diff) + 's ago';
+  if(diff < 3600) return Math.round(diff/60) + 'm ago';
+  return Math.round(diff/3600) + 'h ago';
+}
+
+// POLL
+fetchAgents();
+setInterval(fetchAgents, 5000);
+log('Admin panel initialized', 'ok');
+log('Waiting for agents...', 'info');
+</script>
+</body>
+</html>
