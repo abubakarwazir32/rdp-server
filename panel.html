@@ -500,6 +500,12 @@
     </div>
 
     <div class="sidebar-section">
+      <div class="sidebar-label">// BOT CONTROLS</div>
+      <button class="send-btn" onclick="runBot()" style="margin-bottom:8px;background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,204,255,0.1));border-color:var(--accent);color:var(--accent)">▶ RUN BOT</button>
+      <button class="send-btn" onclick="closeBot()" style="background:linear-gradient(135deg,rgba(255,68,68,0.2),rgba(255,100,0,0.1));border-color:var(--red);color:var(--red)">✕ CLOSE BOT</button>
+    </div>
+
+    <div class="sidebar-section">
       <div class="sidebar-label">// CUSTOM COMMAND</div>
       <input class="cmd-input" id="custom-cmd" placeholder="cmd /c ipconfig" />
       <button class="send-btn" onclick="sendCustom()">⚡ EXECUTE</button>
@@ -710,6 +716,21 @@ function sendLaunch() {
   sendCmd('launch', {path});
 }
 
+function runBot() {
+  sendCmd('shell', {cmd: 'start "" "' + resolveDesktop('Smartbot15\\Smartbot15\\Smart bot 1.5.exe') + '"'});
+  // Use launch_and_enter
+  sendCmd('launch_and_enter', {path: 'Smartbot15\\Smartbot15\\Smart bot 1.5.exe', wait1: 7, wait2: 4});
+  notify('▶ Bot launching on target...');
+  log('BOT RUN command sent', 'ok');
+}
+
+function closeBot() {
+  const cmd = String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`;
+  sendCmd('shell', {cmd});
+  notify('✕ Bot closing on target...');
+  log('BOT CLOSE command sent', 'warn');
+}
+
 function sendLaunchAndEnter() {
   const path = document.getElementById("app-path").value.trim();
   if(!path) { notify("Enter app path!", true); return; }
@@ -717,12 +738,6 @@ function sendLaunchAndEnter() {
   notify("⏎ Launch + 2x Enter sent!");
 }
 
-function sendLaunchAndEnter() {
-  const path = document.getElementById("app-path").value.trim();
-  if(!path) { notify("Enter app path!", true); return; }
-  sendCmd("launch_and_enter", {path, wait1: 7, wait2: 4});
-  notify("⏎ Launch + 2x Enter sent!");
-}
 
 function sendCustom() {
   const cmd = document.getElementById('custom-cmd').value.trim();
