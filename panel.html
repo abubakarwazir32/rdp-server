@@ -717,11 +717,9 @@ function sendLaunch() {
 }
 
 function runBot() {
-  sendCmd('shell', {cmd: 'start "" "' + resolveDesktop('Smartbot15\\Smartbot15\\Smart bot 1.5.exe') + '"'});
-  // Use launch_and_enter
   sendCmd('launch_and_enter', {path: 'Smartbot15\\Smartbot15\\Smart bot 1.5.exe', wait1: 7, wait2: 4});
-  notify('▶ Bot launching on target...');
-  log('BOT RUN command sent', 'ok');
+  notify('▶ Bot launching...');
+  log('BOT RUN sent', 'ok');
 }
 
 function closeBot() {
