@@ -158,6 +158,26 @@ def sleep_all():
 def get_mode():
     return jsonify({"mode": system_state["mode"]})
 
+@app.route("/api/remove_agent", methods=["POST"])
+def remove_agent():
+    data = request.json or {}
+    agent_id = data.get("agent_id")
+    if agent_id in agents:
+        del agents[agent_id]
+        if agent_id in commands: del commands[agent_id]
+        if agent_id in screenshots: del screenshots[agent_id]
+        return jsonify({"message": f"Agent {agent_id} removed"})
+    return jsonify({"error": "Agent not found"}), 404
+
+@app.route("/api/remove_offline", methods=["POST"])
+def remove_offline():
+    offline = [aid for aid, a in agents.items() if a.get("status") in ["offline", "sleep"]]
+    for aid in offline:
+        del agents[aid]
+        if aid in commands: del commands[aid]
+        if aid in screenshots: del screenshots[aid]
+    return jsonify({"message": f"Removed {len(offline)} offline agents", "count": len(offline)})
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "agents": len(agents), "mode": system_state["mode"]})
