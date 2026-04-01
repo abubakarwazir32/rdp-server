@@ -454,6 +454,7 @@
     <div class="stat-pill">TOTAL: <span id="stat-total">0</span></div>
     <div class="stat-pill">ONLINE: <span id="stat-online">0</span></div>
     <div class="stat-pill warn">OFFLINE: <span id="stat-offline">0</span></div>
+    <button onclick="removeOffline()" style="background:rgba(255,68,68,0.15);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(255,68,68,0.3)'" onmouseout="this.style.background='rgba(255,68,68,0.15)'">🗑 REMOVE OFFLINE</button>
   </div>
 </div>
 
@@ -663,6 +664,7 @@ function agentCard(a) {
     <div style="margin-top:10px;display:flex;gap:6px">
       <button onclick="event.stopPropagation();viewScreenshot('${a.id}')" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">📸 SCREENSHOT</button>
       <button onclick="event.stopPropagation();quickCmd('${a.id}','restart')" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px;cursor:pointer;" onmouseover="this.style.borderColor='var(--warn)';this.style.color='var(--warn)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🔄 RESTART</button>
+      <button onclick="event.stopPropagation();removeAgent('${a.id}')" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px 8px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑</button>
     </div>
   </div>`;
 }
@@ -769,6 +771,35 @@ async function checkMode() {
     const d = await r.json();
     updateModeStatus(d.mode);
   } catch(e) {}
+}
+
+async function removeAgent(agentId) {
+  if(!confirm('Remove this agent?')) return;
+  try {
+    const r = await fetch(`${BASE}/api/remove_agent`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({agent_id: agentId})
+    });
+    const d = await r.json();
+    log(`🗑 Agent ${agentId} removed`, 'warn');
+    notify('Agent removed');
+    fetchAgents();
+  } catch(e) { notify('Remove failed!', true); }
+}
+
+async function removeOffline() {
+  const offlineCount = allAgents.filter(a => a.status === 'offline' || a.status === 'sleep').length;
+  if(offlineCount === 0) { notify('No offline agents!', true); return; }
+  if(!confirm(`Remove ${offlineCount} offline agents?`)) return;
+  try {
+    const r = await fetch(`${BASE}/api/remove_offline`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+    });
+    const d = await r.json();
+    log(`🗑 Removed ${d.count} offline agents`, 'warn');
+    notify(`✓ ${d.count} offline agents removed`);
+    fetchAgents();
+  } catch(e) { notify('Remove failed!', true); }
 }
 
 function runBot() {
