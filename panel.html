@@ -509,8 +509,10 @@
 
     <div class="sidebar-section">
       <div class="sidebar-label">// BOT CONTROLS</div>
-      <button class="send-btn" onclick="runBot()" style="margin-bottom:8px;background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,204,255,0.1));border-color:var(--accent);color:var(--accent)">▶ RUN BOT</button>
-      <button class="send-btn" onclick="closeBot()" style="background:linear-gradient(135deg,rgba(255,68,68,0.2),rgba(255,100,0,0.1));border-color:var(--red);color:var(--red)">✕ CLOSE BOT</button>
+      <button class="send-btn" onclick="runBot()" style="margin-bottom:8px;background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,204,255,0.1));border-color:var(--accent);color:var(--accent)">▶ RUN BOT 1.5</button>
+      <button class="send-btn" onclick="closeBot()" style="margin-bottom:8px;background:linear-gradient(135deg,rgba(255,68,68,0.2),rgba(255,100,0,0.1));border-color:var(--red);color:var(--red)">✕ CLOSE BOT 1.5</button>
+      <button class="send-btn" onclick="runBot16()" style="margin-bottom:8px;background:linear-gradient(135deg,rgba(0,204,255,0.2),rgba(0,255,136,0.1));border-color:var(--accent2);color:var(--accent2)">▶ RUN BOT 1.6</button>
+      <button class="send-btn" onclick="closeBot16()" style="background:linear-gradient(135deg,rgba(255,68,68,0.2),rgba(255,100,0,0.1));border-color:var(--red);color:var(--red)">✕ CLOSE BOT 1.6</button>
     </div>
 
     <div class="sidebar-section">
@@ -800,6 +802,19 @@ async function removeOffline() {
     notify(`✓ ${d.count} offline agents removed`);
     fetchAgents();
   } catch(e) { notify('Remove failed!', true); }
+}
+
+function runBot16() {
+  sendCmd('launch_and_enter', {path: 'Smartbot16\\Smartbot16\\Smart bot 1.6.exe', wait1: 7, wait2: 4});
+  notify('▶ Bot 1.6 launching...');
+  log('BOT 1.6 RUN sent', 'ok');
+}
+
+function closeBot16() {
+  const cmd = String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.6'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.6*'"`;
+  sendCmd('shell', {cmd});
+  notify('✕ Bot 1.6 closing...');
+  log('BOT 1.6 CLOSE sent', 'warn');
 }
 
 function runBot() {
