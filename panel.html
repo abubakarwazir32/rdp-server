@@ -479,7 +479,7 @@
         <button onclick="createGroup()" style="background:var(--bg3);border:1px solid var(--accent);color:var(--accent);font-family:var(--font-mono);font-size:11px;padding:4px 8px;cursor:pointer;">+</button>
       </div>
       <div style="display:flex;gap:4px">
-        <button onclick="addToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">ADD SELECTED</button>
+        <button onclick="startAddingToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ ADD RDPs</button><button onclick="addToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✓ SAVE</button>
         <button onclick="deleteGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">DELETE GRP</button>
       </div>
     </div>
@@ -838,12 +838,11 @@ function updateGroupSelect() {
 
 function selectGroup(groupName) {
   currentGroup = groupName || null;
+  selectedAgents.clear();
   if(groupName && groups[groupName]) {
-    // Auto select all agents in group
-    selectedAgents.clear();
+    // Auto select all agents in this group
     groups[groupName].forEach(id => selectedAgents.add(id));
-  } else {
-    selectedAgents.clear();
+    log(`Group "${groupName}" selected: ${groups[groupName].length} agents`, 'info');
   }
   renderAgents();
 }
@@ -862,15 +861,34 @@ function createGroup() {
 function addToGroup() {
   const groupName = document.getElementById('group-select').value;
   if(!groupName) { notify('Pehle group select karo!', true); return; }
-  if(selectedAgents.size === 0) { notify('Pehle agents select karo (Ctrl+Click)!', true); return; }
+  if(selectedAgents.size === 0) { 
+    notify('Pehle Ctrl+Click se RDPs select karo!', true); 
+    // Hint: group filter hatao taake sab RDPs dikhein
+    currentGroup = null;
+    document.getElementById('group-select').value = '';
+    renderAgents();
+    return; 
+  }
   if(!groups[groupName]) groups[groupName] = [];
+  let added = 0;
   selectedAgents.forEach(id => {
-    if(!groups[groupName].includes(id)) groups[groupName].push(id);
+    if(!groups[groupName].includes(id)) { groups[groupName].push(id); added++; }
   });
   localStorage.setItem('rdp_groups', JSON.stringify(groups));
   updateGroupSelect();
-  notify(`✓ ${selectedAgents.size} agents added to "${groupName}"`);
-  log(`Added ${selectedAgents.size} agents to group: ${groupName}`, 'ok');
+  // Group select karo wapis
+  document.getElementById('group-select').value = groupName;
+  notify(`✓ ${added} agents added to "${groupName}"`);
+  log(`Added ${added} agents to group: ${groupName}`, 'ok');
+}
+
+function startAddingToGroup() {
+  // Group select karo, phir filter hatao taake sab RDPs dikhein
+  const groupName = document.getElementById('group-select').value;
+  if(!groupName) { notify('Pehle group select karo!', true); return; }
+  currentGroup = null; // filter hatao
+  notify(`Ctrl+Click se RDPs select karo, phir ADD SELECTED dabao`);
+  renderAgents();
 }
 
 function deleteGroup() {
@@ -896,6 +914,19 @@ function sendLaunch() {
 }
 
 async function wakeAll() {
+  // Agar selected hain to sirf unko wake karo
+  if(selectedAgents.size > 0) {
+    for(const aid of selectedAgents) {
+      await fetch(`${BASE}/api/command`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({target:aid, type:'wake_agent', payload:{}})
+      });
+    }
+    log(`⚡ WAKE sent to ${selectedAgents.size} selected agents`, 'ok');
+    notify(`⚡ ${selectedAgents.size} agents WAKING UP!`);
+    return;
+  }
+  // Koi select nahi to sab ko wake karo
   try {
     const r = await fetch(`${BASE}/api/wake`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
     const d = await r.json();
@@ -906,6 +937,19 @@ async function wakeAll() {
 }
 
 async function sleepAll() {
+  // Agar selected hain to sirf unko sleep karo
+  if(selectedAgents.size > 0) {
+    for(const aid of selectedAgents) {
+      await fetch(`${BASE}/api/command`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({target:aid, type:'sleep_agent', payload:{}})
+      });
+    }
+    log(`💤 SLEEP sent to ${selectedAgents.size} selected agents`, 'warn');
+    notify(`💤 ${selectedAgents.size} agents SLEEPING`);
+    return;
+  }
+  // Koi select nahi to sab ko sleep karo
   try {
     const r = await fetch(`${BASE}/api/sleep`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
     const d = await r.json();
