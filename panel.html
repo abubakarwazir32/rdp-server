@@ -469,6 +469,21 @@
       </select>
     </div>
 
+    <div class="sidebar-section">
+      <div class="sidebar-label">// GROUPS</div>
+      <select class="target-select" id="group-select" onchange="selectGroup(this.value)" style="margin-bottom:6px">
+        <option value="">⬡ No Group Filter</option>
+      </select>
+      <div style="display:flex;gap:4px;margin-bottom:4px">
+        <input class="cmd-input" id="new-group-name" placeholder="Group name..." style="margin-bottom:0;flex:1"/>
+        <button onclick="createGroup()" style="background:var(--bg3);border:1px solid var(--accent);color:var(--accent);font-family:var(--font-mono);font-size:11px;padding:4px 8px;cursor:pointer;">+</button>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button onclick="addToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">ADD SELECTED</button>
+        <button onclick="deleteGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">DELETE GRP</button>
+      </div>
+    </div>
+
     <div class="sidebar-section" style="background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.2);">
       <div class="sidebar-label">// SYSTEM POWER</div>
       <button class="send-btn" id="wake-btn" onclick="wakeAll()" style="margin-bottom:8px;font-size:15px;padding:12px;background:linear-gradient(135deg,rgba(0,255,136,0.25),rgba(0,204,255,0.15));border-color:var(--accent);color:var(--accent);letter-spacing:3px;">⚡ WAKE ALL</button>
@@ -578,8 +593,11 @@
 const BASE = window.location.origin;
 let allAgents = [];
 let selectedAgent = null;
+let selectedAgents = new Set(); // multi-select
 let currentTab = 'agents';
 let modalAgentId = null;
+let groups = JSON.parse(localStorage.getItem('rdp_groups') || '{}'); // {groupName: [agentId, ...]}
+let currentGroup = null;
 
 function log(msg, type='info') {
   const el = document.getElementById('log');
@@ -634,19 +652,31 @@ function updateTargetSelect() {
 
 function renderAgents() {
   const el = document.getElementById('content');
-  if(!allAgents.length) {
-    el.innerHTML = `<div class="empty-state"><div class="big">📡</div><div class="title">NO AGENTS CONNECTED</div><div>Deploy the .exe agent on your RDP machines</div></div>`;
+  let filtered = allAgents;
+  
+  // Group filter
+  if(currentGroup && groups[currentGroup]) {
+    filtered = allAgents.filter(a => groups[currentGroup].includes(a.id));
+  }
+  
+  if(!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big">📡</div><div class="title">${currentGroup ? 'NO AGENTS IN GROUP' : 'NO AGENTS CONNECTED'}</div><div>${currentGroup ? 'Add agents to this group' : 'Deploy the .exe agent on your RDP machines'}</div></div>`;
     return;
   }
-  el.innerHTML = `<div class="agents-grid">${allAgents.map(agentCard).join('')}</div>`;
+  
+  const selCount = selectedAgents.size;
+  const selInfo = selCount > 0 ? `<div style="padding:8px 0;font-family:var(--font-mono);font-size:12px;color:var(--accent);">● ${selCount} SELECTED &nbsp;<button onclick="clearSelection()" style="background:none;border:1px solid var(--muted);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">CLEAR</button></div>` : '';
+  
+  el.innerHTML = selInfo + `<div class="agents-grid">${filtered.map(agentCard).join('')}</div>`;
 }
 
 function agentCard(a) {
   const isOff = a.status === 'offline';
   const cpu = a.cpu || 0, ram = a.ram || 0, disk = a.disk || 0;
   const lastSeen = a.last_seen ? timeSince(a.last_seen) : 'Never';
+  const isSelected = selectedAgents.has(a.id);
   return `
-  <div class="agent-card ${isOff?'offline':''} ${selectedAgent===a.id?'selected':''}" onclick="selectAgent('${a.id}')">
+  <div class="agent-card ${isOff?'offline':''} ${isSelected?'selected':''}" onclick="handleCardClick(event,'${a.id}')" style="${isSelected?'border-color:var(--accent);box-shadow:0 0 16px rgba(0,255,136,0.2)':''}">
     <div class="agent-header">
       <div>
         <div class="agent-name">${a.hostname}</div>
@@ -701,6 +731,18 @@ function getTarget() {
 }
 
 async function sendCmd(type, payload={}, target=null) {
+  // If multiple selected, send to each
+  if(!target && selectedAgents.size > 0) {
+    for(const aid of selectedAgents) {
+      await fetch(`${BASE}/api/command`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({target:aid, type, payload})
+      });
+    }
+    log(`CMD [${type}] → ${selectedAgents.size} selected agents`, 'ok');
+    notify(`✓ ${type.toUpperCase()} sent to ${selectedAgents.size} agents`);
+    return;
+  }
   const t = target || getTarget();
   try {
     const r = await fetch(`${BASE}/api/command`, {
@@ -715,6 +757,101 @@ async function sendCmd(type, payload={}, target=null) {
     log(`Failed to send ${type}`, 'err');
     notify('Command failed!', true);
   }
+}
+
+// Card click handler - Ctrl for multi-select
+function handleCardClick(event, agentId) {
+  if(event.ctrlKey || event.metaKey) {
+    // Ctrl+Click = multi select
+    if(selectedAgents.has(agentId)) {
+      selectedAgents.delete(agentId);
+    } else {
+      selectedAgents.add(agentId);
+    }
+    // Update target dropdown
+    if(selectedAgents.size === 1) {
+      document.getElementById('target-select').value = [...selectedAgents][0];
+    } else if(selectedAgents.size > 1) {
+      document.getElementById('target-select').value = 'all';
+    }
+  } else {
+    // Normal click = single select
+    selectedAgents.clear();
+    selectedAgents.add(agentId);
+    selectedAgent = agentId;
+    document.getElementById('target-select').value = agentId;
+  }
+  renderAgents();
+}
+
+function clearSelection() {
+  selectedAgents.clear();
+  selectedAgent = null;
+  document.getElementById('target-select').value = 'all';
+  renderAgents();
+}
+
+// GROUP FUNCTIONS
+function updateGroupSelect() {
+  const sel = document.getElementById('group-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">⬡ No Group Filter</option>';
+  Object.keys(groups).forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = `📁 ${g} (${(groups[g]||[]).length})`;
+    sel.appendChild(opt);
+  });
+  if(cur) sel.value = cur;
+}
+
+function selectGroup(groupName) {
+  currentGroup = groupName || null;
+  if(groupName && groups[groupName]) {
+    // Auto select all agents in group
+    selectedAgents.clear();
+    groups[groupName].forEach(id => selectedAgents.add(id));
+  } else {
+    selectedAgents.clear();
+  }
+  renderAgents();
+}
+
+function createGroup() {
+  const name = document.getElementById('new-group-name').value.trim();
+  if(!name) { notify('Group name daalo!', true); return; }
+  if(groups[name]) { notify('Group already exists!', true); return; }
+  groups[name] = [];
+  localStorage.setItem('rdp_groups', JSON.stringify(groups));
+  document.getElementById('new-group-name').value = '';
+  updateGroupSelect();
+  notify(`✓ Group "${name}" created`);
+}
+
+function addToGroup() {
+  const groupName = document.getElementById('group-select').value;
+  if(!groupName) { notify('Pehle group select karo!', true); return; }
+  if(selectedAgents.size === 0) { notify('Pehle agents select karo (Ctrl+Click)!', true); return; }
+  if(!groups[groupName]) groups[groupName] = [];
+  selectedAgents.forEach(id => {
+    if(!groups[groupName].includes(id)) groups[groupName].push(id);
+  });
+  localStorage.setItem('rdp_groups', JSON.stringify(groups));
+  updateGroupSelect();
+  notify(`✓ ${selectedAgents.size} agents added to "${groupName}"`);
+  log(`Added ${selectedAgents.size} agents to group: ${groupName}`, 'ok');
+}
+
+function deleteGroup() {
+  const groupName = document.getElementById('group-select').value;
+  if(!groupName) { notify('Group select karo!', true); return; }
+  if(!confirm(`Delete group "${groupName}"?`)) return;
+  delete groups[groupName];
+  localStorage.setItem('rdp_groups', JSON.stringify(groups));
+  currentGroup = null;
+  updateGroupSelect();
+  renderAgents();
+  notify(`Group "${groupName}" deleted`);
 }
 
 async function quickCmd(agentId, type) {
@@ -805,7 +942,7 @@ async function removeOffline() {
 }
 
 function runBot16() {
-  sendCmd('launch_and_enter', {path: 'Smartbot16\\Smart bot 1.6.exe', wait1: 7, wait2: 4});
+  sendCmd('launch_and_enter', {path: 'Smartbot16\\Smartbot16\\Smart bot 1.6.exe', wait1: 7, wait2: 4});
   notify('▶ Bot 1.6 launching...');
   log('BOT 1.6 RUN sent', 'ok');
 }
@@ -937,6 +1074,7 @@ fetchAgents();
 setInterval(fetchAgents, 5000);
 checkMode();
 setInterval(checkMode, 10000);
+updateGroupSelect();
 log('Admin panel initialized', 'ok');
 log('Waiting for agents...', 'info');
 </script>
