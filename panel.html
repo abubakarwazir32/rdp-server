@@ -665,7 +665,7 @@ function renderAgents() {
   }
   
   const selCount = selectedAgents.size;
-  const selInfo = selCount > 0 ? `<div style="padding:8px 0;font-family:var(--font-mono);font-size:12px;color:var(--accent);">● ${selCount} SELECTED &nbsp;<button onclick="clearSelection()" style="background:none;border:1px solid var(--muted);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">CLEAR</button></div>` : '';
+  const selInfo = selCount > 0 ? `<div style="padding:8px 0 4px;font-family:var(--font-mono);font-size:12px;color:var(--accent);display:flex;align-items:center;gap:12px;">● ${selCount} SELECTED (Ctrl+Click to add more) &nbsp;<button onclick="clearSelection()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">✕ CLEAR</button><button onclick="selectAllVisible()" style="background:none;border:1px solid var(--accent2);color:var(--accent2);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">SELECT ALL</button></div>` : `<div style="padding:4px 0;font-family:var(--font-mono);font-size:11px;color:var(--muted);">Ctrl+Click to select multiple RDPs</div>`;
   
   el.innerHTML = selInfo + `<div class="agents-grid">${filtered.map(agentCard).join('')}</div>`;
 }
@@ -731,23 +731,45 @@ function getTarget() {
 }
 
 async function sendCmd(type, payload={}, target=null) {
-  // If multiple selected, send to each
-  if(!target && selectedAgents.size > 0) {
-    for(const aid of selectedAgents) {
-      await fetch(`${BASE}/api/command`, {
+  // Agar explicit target diya hai (jaise quickCmd se) to wahi use karo
+  if(target) {
+    try {
+      const r = await fetch(`${BASE}/api/command`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target:aid, type, payload})
+        body: JSON.stringify({target, type, payload})
       });
+      const d = await r.json();
+      log(`CMD [${type}] → ${target}: ${d.message}`, 'ok');
+      notify(`✓ ${type.toUpperCase()} sent`);
+    } catch(e) {
+      log(`Failed to send ${type}`, 'err');
+      notify('Command failed!', true);
     }
-    log(`CMD [${type}] → ${selectedAgents.size} selected agents`, 'ok');
-    notify(`✓ ${type.toUpperCase()} sent to ${selectedAgents.size} agents`);
     return;
   }
-  const t = target || getTarget();
+
+  // Agar multiple selected hain to sirf unko bhejo
+  if(selectedAgents.size > 1) {
+    let count = 0;
+    for(const aid of selectedAgents) {
+      try {
+        await fetch(`${BASE}/api/command`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({target:aid, type, payload})
+        });
+        count++;
+      } catch(e) {}
+    }
+    log(`CMD [${type}] → ${count} selected agents`, 'ok');
+    notify(`✓ ${type.toUpperCase()} sent to ${count} agents`);
+    return;
+  }
+
+  // Single selected ya dropdown se
+  const t = selectedAgents.size === 1 ? [...selectedAgents][0] : getTarget();
   try {
     const r = await fetch(`${BASE}/api/command`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({target:t, type, payload})
     });
     const d = await r.json();
@@ -761,25 +783,25 @@ async function sendCmd(type, payload={}, target=null) {
 
 // Card click handler - Ctrl for multi-select
 function handleCardClick(event, agentId) {
+  event.stopPropagation();
   if(event.ctrlKey || event.metaKey) {
-    // Ctrl+Click = multi select
+    // Ctrl+Click = toggle selection
     if(selectedAgents.has(agentId)) {
       selectedAgents.delete(agentId);
     } else {
       selectedAgents.add(agentId);
     }
-    // Update target dropdown
-    if(selectedAgents.size === 1) {
-      document.getElementById('target-select').value = [...selectedAgents][0];
-    } else if(selectedAgents.size > 1) {
-      document.getElementById('target-select').value = 'all';
-    }
   } else {
-    // Normal click = single select
+    // Normal click = single select only
     selectedAgents.clear();
     selectedAgents.add(agentId);
     selectedAgent = agentId;
-    document.getElementById('target-select').value = agentId;
+  }
+  // Update target dropdown
+  if(selectedAgents.size === 1) {
+    document.getElementById('target-select').value = [...selectedAgents][0];
+  } else {
+    document.getElementById('target-select').value = 'all';
   }
   renderAgents();
 }
@@ -788,6 +810,15 @@ function clearSelection() {
   selectedAgents.clear();
   selectedAgent = null;
   document.getElementById('target-select').value = 'all';
+  renderAgents();
+}
+
+function selectAllVisible() {
+  let filtered = allAgents;
+  if(currentGroup && groups[currentGroup]) {
+    filtered = allAgents.filter(a => groups[currentGroup].includes(a.id));
+  }
+  filtered.forEach(a => selectedAgents.add(a.id));
   renderAgents();
 }
 
