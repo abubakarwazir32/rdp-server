@@ -474,7 +474,7 @@ function timeSince(isoStr){const diff=(Date.now()-new Date(isoStr).getTime())/10
 
 // ── SCHEDULE ─────────────────────────────────────────────────
 
-function openScheduleModal() {
+async function openScheduleModal() {
   // Target dropdown populate karo
   const sel = document.getElementById('sch-target');
   sel.innerHTML = '<option value="all">⬡ ALL MACHINES</option>';
