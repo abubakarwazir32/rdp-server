@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import uuid, os
+import uuid, os, threading, time
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -11,10 +11,11 @@ agents = {}
 commands = defaultdict(list)
 screenshots = {}
 SECRET_KEY = os.environ.get("SECRET_KEY", "rdp-manager-secret-2024")
-
-# Global sleep/wake state
-# "sleep" = agents so rahe hain, "wake" = active hain
 system_state = {"mode": "sleep"}
+
+# Schedule storage
+schedule_config = {}  # target -> config
+schedule_timers = {}  # target -> timer thread
 
 def now():
     return datetime.now(timezone.utc).isoformat()
@@ -43,23 +44,17 @@ def agent_register():
 
 @app.route("/agent/poll", methods=["POST"])
 def agent_poll():
-    """Agent yahan check karta hai - slow interval mein (5 min)"""
     data = request.json or {}
     if data.get("secret") != SECRET_KEY:
         return jsonify({"error": "Unauthorized"}), 401
     agent_id = data.get("agent_id")
     if agent_id not in agents:
         return jsonify({"error": "not_found"}), 404
-
     agents[agent_id].update({
-        "last_seen": now(),
-        "cpu": data.get("cpu", 0),
-        "ram": data.get("ram", 0),
-        "disk": data.get("disk", 0),
+        "last_seen": now(), "cpu": data.get("cpu", 0),
+        "ram": data.get("ram", 0), "disk": data.get("disk", 0),
         "status": "online" if system_state["mode"] == "wake" else "sleep",
     })
-
-    # Mode return karo - agar wake hai to commands bhi do
     if system_state["mode"] == "wake":
         pending = commands[agent_id].copy()
         commands[agent_id].clear()
@@ -69,7 +64,6 @@ def agent_poll():
 
 @app.route("/agent/heartbeat", methods=["POST"])
 def agent_heartbeat():
-    """Backward compatibility - purane agents ke liye"""
     return agent_poll()
 
 @app.route("/agent/screenshot", methods=["POST"])
@@ -91,8 +85,6 @@ def agent_result():
             "success": data.get("success"), "time": now()
         }
     return jsonify({"message": "ok"})
-
-# ── ADMIN API ─────────────────────────────────────────────────
 
 @app.route("/api/agents", methods=["GET"])
 def get_agents():
@@ -140,18 +132,14 @@ def request_screenshot():
 
 @app.route("/api/wake", methods=["POST"])
 def wake_all():
-    """Sab agents ko wake karo"""
     system_state["mode"] = "wake"
-    for a in agents.values():
-        a["status"] = "online"
+    for a in agents.values(): a["status"] = "online"
     return jsonify({"message": "All agents WAKING UP", "mode": "wake"})
 
 @app.route("/api/sleep", methods=["POST"])
 def sleep_all():
-    """Sab agents ko so jalao"""
     system_state["mode"] = "sleep"
-    for a in agents.values():
-        a["status"] = "sleep"
+    for a in agents.values(): a["status"] = "sleep"
     return jsonify({"message": "All agents SLEEPING", "mode": "sleep"})
 
 @app.route("/api/mode", methods=["GET"])
@@ -177,6 +165,99 @@ def remove_offline():
         if aid in commands: del commands[aid]
         if aid in screenshots: del screenshots[aid]
     return jsonify({"message": f"Removed {len(offline)} offline agents", "count": len(offline)})
+
+# ── SCHEDULE API ──────────────────────────────────────────────
+
+def run_schedule_job(key):
+    """Background thread - schedule execute karta hai"""
+    cfg = schedule_config.get(key)
+    if not cfg: return
+
+    target = cfg["target"]
+    bot = cfg["bot"]
+    delay_min = cfg["delayMin"]
+    delay_max = cfg["delayMax"]
+
+    # Restart command bhejo
+    restart_cmd = {"id": str(uuid.uuid4())[:8], "type": "restart", "payload": {}, "issued_at": now()}
+    if target == "all":
+        for aid in agents: commands[aid].append(restart_cmd)
+    else:
+        commands[target].append(restart_cmd)
+
+    if bot == "none":
+        return
+
+    # Random delay calculate karo
+    import random
+    random_sec = random.randint(delay_min, delay_max)
+    total_wait = 120 + random_sec  # 2 min boot + random seconds
+
+    time.sleep(total_wait)
+
+    # Bot launch command bhejo
+    if bot == "1.5":
+        path = "Smartbot15\\Smartbot15\\Smart bot 1.5.exe"
+    else:
+        path = "Smartbot16\\Smartbot16\\Smart bot 1.6.exe"
+
+    bot_cmd = {
+        "id": str(uuid.uuid4())[:8],
+        "type": "launch_and_enter",
+        "payload": {"path": path, "wait1": 7, "wait2": 4},
+        "issued_at": now()
+    }
+    if target == "all":
+        for aid in agents: commands[aid].append(bot_cmd)
+    else:
+        commands[target].append(bot_cmd)
+
+def schedule_loop(key):
+    """Repeating schedule loop"""
+    while key in schedule_config:
+        cfg = schedule_config.get(key)
+        if not cfg: break
+        interval_sec = cfg["intervalMs"] / 1000
+        time.sleep(interval_sec)
+        if key in schedule_config:  # still active?
+            t = threading.Thread(target=run_schedule_job, args=(key,))
+            t.daemon = True
+            t.start()
+
+@app.route("/api/schedule/save", methods=["POST"])
+def save_schedule():
+    data = request.json or {}
+    key = data.get("target", "all")
+    schedule_config[key] = {
+        "value": data.get("value", 2),
+        "unit": data.get("unit", "hours"),
+        "bot": data.get("bot", "1.5"),
+        "delayMin": data.get("delayMin", 2),
+        "delayMax": data.get("delayMax", 10),
+        "target": data.get("target", "all"),
+        "intervalMs": data.get("intervalMs", 7200000),
+        "created_at": now(),
+    }
+    # Start loop thread
+    if key in schedule_timers:
+        del schedule_timers[key]  # old one will exit
+    t = threading.Thread(target=schedule_loop, args=(key,))
+    t.daemon = True
+    t.start()
+    schedule_timers[key] = t
+    return jsonify({"message": "Schedule saved", "config": schedule_config[key]})
+
+@app.route("/api/schedule/stop", methods=["POST"])
+def stop_schedule():
+    data = request.json or {}
+    key = data.get("target", "all")
+    if key in schedule_config:
+        del schedule_config[key]
+    return jsonify({"message": "Schedule stopped"})
+
+@app.route("/api/schedule/get", methods=["GET"])
+def get_schedules():
+    return jsonify(schedule_config)
 
 @app.route("/health")
 def health():
