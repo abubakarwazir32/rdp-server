@@ -270,6 +270,7 @@
 const BASE = window.location.origin;
 let allAgents = [], selectedAgent = null, currentTab = 'agents', modalAgentId = null;
 let scheduleConfig = null;
+let scheduleTimer = null;
 
 
 function log(msg, type='info') {
