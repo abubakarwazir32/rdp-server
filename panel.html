@@ -484,14 +484,20 @@ function openScheduleModal() {
     opt.textContent = `${a.hostname} [${a.id}]`;
     sel.appendChild(opt);
   });
-  if(scheduleConfig) {
-    document.getElementById('sch-value').value = scheduleConfig.value;
-    document.getElementById('sch-unit').value = scheduleConfig.unit;
-    document.getElementById('sch-bot').value = scheduleConfig.bot;
-    document.getElementById('sch-delay-min').value = scheduleConfig.delayMin;
-    document.getElementById('sch-delay-max').value = scheduleConfig.delayMax;
-    document.getElementById('sch-target').value = scheduleConfig.target;
-  }
+  // Server se schedule load karo
+  try {
+    const r = await fetch(`${BASE}/api/schedule/get`);
+    const schedules = await r.json();
+    if(Object.keys(schedules).length > 0) {
+      const cfg = Object.values(schedules)[0];
+      document.getElementById('sch-value').value = cfg.value;
+      document.getElementById('sch-unit').value = cfg.unit;
+      document.getElementById('sch-bot').value = cfg.bot;
+      document.getElementById('sch-delay-min').value = cfg.delayMin;
+      document.getElementById('sch-delay-max').value = cfg.delayMax;
+      if(document.getElementById('sch-target')) document.getElementById('sch-target').value = cfg.target;
+    }
+  } catch(e) {}
   updateSchInfo();
   document.getElementById('schedule-modal').classList.add('open');
 }
@@ -516,7 +522,7 @@ function updateSchInfo() {
     `🕐 First restart at: <b>~${nextTime}</b>`;
 }
 
-function saveSchedule() {
+async function saveSchedule() {
   const val = parseInt(document.getElementById('sch-value').value)||1;
   const unit = document.getElementById('sch-unit').value;
   const bot = document.getElementById('sch-bot').value;
@@ -525,61 +531,32 @@ function saveSchedule() {
   const target = document.getElementById('sch-target').value;
   const intervalMs = unit==='hours' ? val*3600000 : val*60000;
 
-  scheduleConfig = {value:val, unit, bot, delayMin, delayMax, target, intervalMs};
-
-  if(scheduleTimer) clearInterval(scheduleTimer);
-  scheduleTimer = setInterval(runSchedule, intervalMs);
-
-  document.getElementById('schedule-status').style.display = 'block';
-  document.getElementById('schedule-status').textContent = `⏱ ${val} ${unit}`;
-
-  closeScheduleModal();
-  log(`⏱ Schedule started: every ${val} ${unit} | bot ${bot} | target: ${target}`, 'ok');
-  notify(`✓ Schedule started! Restart every ${val} ${unit}`);
-}
-
-async function runSchedule() {
-  if(!scheduleConfig) return;
-  const {bot, delayMin, delayMax, target} = scheduleConfig;
-
-  log(`⏱ Schedule: RESTART → ${target}`, 'warn');
-  notify(`⏱ Schedule restart running...`);
-
-  // Restart bhejo
-  await fetch(`${BASE}/api/command`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({target, type:'restart', payload:{}})
-  });
-
-  if(bot==='none') return;
-
-  // 2 minute wait (system boot) + random delay
-  const randomSec = Math.floor(Math.random()*(delayMax-delayMin+1)+delayMin);
-  const totalWait = 120000 + (randomSec * 1000); // 2 min + random seconds
-
-  log(`⏱ Waiting ${Math.round(totalWait/1000)}s for boot + random delay (${randomSec}s)...`, 'info');
-
-  setTimeout(async () => {
-    const path = bot==='1.5'
-      ? 'Smartbot15\\\\Smartbot15\\\\Smart bot 1.5.exe'
-      : 'Smartbot16\\\\Smartbot16\\\\Smart bot 1.6.exe';
-
-    await fetch(`${BASE}/api/command`, {
+  // SERVER par save karo - browser pe nahi!
+  try {
+    await fetch(`${BASE}/api/schedule/save`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({target, type:'launch_and_enter', payload:{path, wait1:7, wait2:4}})
+      body: JSON.stringify({value:val, unit, bot, delayMin, delayMax, target, intervalMs})
     });
-    log(`⏱ Bot ${bot} launched after restart`, 'ok');
-    notify(`✓ Bot ${bot} launched after restart!`);
-  }, totalWait);
+    document.getElementById('schedule-status').style.display = 'block';
+    document.getElementById('schedule-status').textContent = `⏱ ${val} ${unit}`;
+    closeScheduleModal();
+    log(`⏱ Schedule saved on SERVER: every ${val} ${unit} | bot ${bot}`, 'ok');
+    notify(`✓ Schedule started! Refresh karo - server par save hai`);
+  } catch(e) { notify('Schedule save failed!', true); }
 }
 
-function stopSchedule() {
-  if(scheduleTimer) { clearInterval(scheduleTimer); scheduleTimer=null; }
-  scheduleConfig = null;
-  document.getElementById('schedule-status').style.display='none';
-  closeScheduleModal();
-  log('⏱ Schedule stopped', 'warn');
-  notify('Schedule stopped');
+async function stopSchedule() {
+  const target = document.getElementById('sch-target') ? document.getElementById('sch-target').value : 'all';
+  try {
+    await fetch(`${BASE}/api/schedule/stop`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({target: target || 'all'})
+    });
+    document.getElementById('schedule-status').style.display='none';
+    closeScheduleModal();
+    log('⏱ Schedule stopped on server', 'warn');
+    notify('Schedule stopped');
+  } catch(e) { notify('Stop failed!', true); }
 }
 
 async function checkScheduleStatus() {
