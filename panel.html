@@ -7,438 +7,98 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #090c10;
-    --bg2: #0d1117;
-    --bg3: #161b22;
-    --border: #21262d;
-    --accent: #00ff88;
-    --accent2: #00ccff;
-    --accent3: #ff6b35;
-    --warn: #ffcc00;
-    --red: #ff4444;
-    --text: #e6edf3;
-    --muted: #7d8590;
-    --online: #00ff88;
-    --offline: #ff4444;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-ui: 'Rajdhani', sans-serif;
+    --bg: #090c10; --bg2: #0d1117; --bg3: #161b22; --border: #21262d;
+    --accent: #00ff88; --accent2: #00ccff; --warn: #ffcc00; --red: #ff4444;
+    --text: #e6edf3; --muted: #7d8590; --online: #00ff88; --offline: #ff4444;
+    --font-mono: 'Share Tech Mono', monospace; --font-ui: 'Rajdhani', sans-serif;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 15px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Scanline overlay */
-  body::before {
-    content:'';
-    position:fixed;
-    inset:0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.015) 2px, rgba(0,255,136,0.015) 4px);
-    pointer-events:none;
-    z-index:9999;
-  }
-
-  /* TOP BAR */
-  .topbar {
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 0 24px;
-    height: 56px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top:0; z-index:100;
-  }
-  .logo {
-    display:flex; align-items:center; gap:10px;
-    font-family: var(--font-mono);
-    font-size: 18px;
-    color: var(--accent);
-    letter-spacing: 2px;
-  }
-  .logo-icon {
-    width:32px; height:32px;
-    border: 2px solid var(--accent);
-    display:flex; align-items:center; justify-content:center;
-    font-size:14px;
-    box-shadow: 0 0 12px rgba(0,255,136,0.4);
-    animation: pulse-border 2s infinite;
-  }
-  @keyframes pulse-border {
-    0%,100% { box-shadow: 0 0 12px rgba(0,255,136,0.4); }
-    50% { box-shadow: 0 0 24px rgba(0,255,136,0.8), inset 0 0 8px rgba(0,255,136,0.1); }
-  }
-  .topbar-stats {
-    display:flex; gap:24px; align-items:center;
-  }
-  .stat-pill {
-    display:flex; align-items:center; gap:6px;
-    font-family: var(--font-mono);
-    font-size:13px;
-    color: var(--muted);
-  }
-  .stat-pill span { color: var(--accent); font-weight:bold; }
-  .stat-pill.warn span { color: var(--warn); }
-  .stat-pill.red span { color: var(--red); }
-  .live-dot {
-    width:8px; height:8px; border-radius:50%;
-    background: var(--accent);
-    animation: blink 1s infinite;
-  }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:15px; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,0.015) 2px,rgba(0,255,136,0.015) 4px); pointer-events:none; z-index:9999; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:56px; background:var(--bg2); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:18px; color:var(--accent); letter-spacing:2px; }
+  .logo-icon { width:32px; height:32px; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 0 12px rgba(0,255,136,0.4); animation:pulse-border 2s infinite; }
+  @keyframes pulse-border { 0%,100%{box-shadow:0 0 12px rgba(0,255,136,0.4)} 50%{box-shadow:0 0 24px rgba(0,255,136,0.8),inset 0 0 8px rgba(0,255,136,0.1)} }
+  .topbar-stats { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .stat-pill { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:13px; color:var(--muted); }
+  .stat-pill span { color:var(--accent); font-weight:bold; }
+  .stat-pill.warn span { color:var(--warn); }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation:blink 1s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-  /* LAYOUT */
-  .layout {
-    display:grid;
-    grid-template-columns: 280px 1fr;
-    grid-template-rows: auto 1fr;
-    height: calc(100vh - 56px);
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display:flex; flex-direction:column;
-    grid-row: 1 / 3;
-    overflow-y:auto;
-  }
-  .sidebar-section {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .sidebar-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  /* COMMAND BUTTONS */
-  .cmd-grid {
-    display:grid; grid-template-columns:1fr 1fr; gap:8px;
-  }
-  .cmd-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display:flex; flex-direction:column; align-items:center; gap:4px;
-    letter-spacing:0.5px;
-  }
-  .cmd-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,255,136,0.05);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0,255,136,0.15);
-  }
-  .cmd-btn.danger:hover {
-    border-color: var(--red);
-    color: var(--red);
-    background: rgba(255,68,68,0.05);
-    box-shadow: 0 4px 16px rgba(255,68,68,0.15);
-  }
-  .cmd-btn.warn-btn:hover {
-    border-color: var(--warn);
-    color: var(--warn);
-    background: rgba(255,204,0,0.05);
-    box-shadow: 0 4px 16px rgba(255,204,0,0.15);
-  }
+  .layout { display:grid; grid-template-columns:280px 1fr; height:calc(100vh - 56px); }
+  .sidebar { background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
+  .sidebar-section { padding:16px; border-bottom:1px solid var(--border); }
+  .sidebar-label { font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .cmd-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cmd-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-ui); font-size:13px; font-weight:600; padding:10px 8px; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .cmd-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,255,136,0.05); transform:translateY(-1px); }
+  .cmd-btn.danger:hover { border-color:var(--red); color:var(--red); background:rgba(255,68,68,0.05); }
+  .cmd-btn.warn-btn:hover { border-color:var(--warn); color:var(--warn); background:rgba(255,204,0,0.05); }
   .cmd-btn .icon { font-size:20px; }
-
-  /* TARGET SELECTOR */
-  .target-select {
-    width:100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size:13px;
-    padding: 8px 12px;
-    margin-bottom:10px;
-    outline:none;
-    cursor:pointer;
-  }
-  .target-select:focus { border-color: var(--accent2); }
-
-  /* CUSTOM COMMAND */
-  .cmd-input {
-    width:100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size:13px;
-    padding: 8px 12px;
-    outline:none;
-    margin-bottom:8px;
-  }
-  .cmd-input::placeholder { color: var(--muted); }
-  .cmd-input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,136,0.2); }
-  .send-btn {
-    width:100%;
-    background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,204,255,0.1));
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size:13px;
-    padding: 9px;
-    cursor:pointer;
-    letter-spacing:2px;
-    transition: all 0.2s;
-  }
-  .send-btn:hover {
-    background: rgba(0,255,136,0.2);
-    box-shadow: 0 0 20px rgba(0,255,136,0.3);
-  }
-
-  /* MAIN AREA */
-  .main {
-    display:flex; flex-direction:column;
-    overflow:hidden;
-  }
-
-  /* TABS */
-  .tabs {
-    display:flex; gap:0;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-  }
-  .tab {
-    font-family: var(--font-mono);
-    font-size:13px;
-    padding: 14px 20px;
-    color: var(--muted);
-    cursor:pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    letter-spacing:1px;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  /* AGENTS GRID */
-  .content {
-    flex:1; overflow-y:auto;
-    padding: 16px;
-  }
-  .agents-grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap:12px;
-  }
-
-  /* AGENT CARD */
-  .agent-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position:relative;
-    overflow:hidden;
-  }
-  .agent-card::before {
-    content:'';
-    position:absolute; left:0; top:0; bottom:0;
-    width:3px;
-    background: var(--online);
-    transition: background 0.3s;
-  }
-  .agent-card.offline::before { background: var(--offline); }
-  .agent-card:hover {
-    border-color: var(--accent2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,204,255,0.1);
-  }
-  .agent-card.selected {
-    border-color: var(--accent);
-    background: rgba(0,255,136,0.04);
-    box-shadow: 0 0 20px rgba(0,255,136,0.1);
-  }
-
-  .agent-header {
-    display:flex; justify-content:space-between; align-items:flex-start;
-    margin-bottom:10px;
-  }
-  .agent-name {
-    font-family: var(--font-mono);
-    font-size:15px;
-    color: var(--accent2);
-    font-weight:bold;
-  }
-  .agent-id {
-    font-family: var(--font-mono);
-    font-size:11px;
-    color: var(--muted);
-    margin-top:2px;
-  }
-  .status-badge {
-    font-family: var(--font-mono);
-    font-size:11px;
-    padding: 3px 8px;
-    border-radius:2px;
-    letter-spacing:1px;
-  }
-  .status-badge.online {
-    background: rgba(0,255,136,0.1);
-    color: var(--online);
-    border: 1px solid rgba(0,255,136,0.3);
-  }
-  .status-badge.offline {
-    background: rgba(255,68,68,0.1);
-    color: var(--offline);
-    border: 1px solid rgba(255,68,68,0.3);
-  }
-
-  .agent-info {
-    font-size:13px;
-    color: var(--muted);
-    margin-bottom:10px;
-    line-height:1.6;
-  }
-  .agent-info strong { color: var(--text); }
-
-  /* RESOURCE BARS */
+  .target-select { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:13px; padding:8px 12px; margin-bottom:10px; outline:none; cursor:pointer; }
+  .cmd-input { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--accent); font-family:var(--font-mono); font-size:13px; padding:8px 12px; outline:none; margin-bottom:8px; }
+  .cmd-input::placeholder { color:var(--muted); }
+  .send-btn { width:100%; background:linear-gradient(135deg,rgba(0,255,136,0.15),rgba(0,204,255,0.1)); border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:13px; padding:9px; cursor:pointer; letter-spacing:2px; transition:all 0.2s; }
+  .send-btn:hover { background:rgba(0,255,136,0.2); box-shadow:0 0 20px rgba(0,255,136,0.3); }
+  .main { display:flex; flex-direction:column; overflow:hidden; }
+  .tabs { display:flex; background:var(--bg2); border-bottom:1px solid var(--border); padding:0 16px; }
+  .tab { font-family:var(--font-mono); font-size:13px; padding:14px 20px; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .content { flex:1; overflow-y:auto; padding:16px; }
+  .agents-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+  .agent-card { background:var(--bg2); border:1px solid var(--border); padding:16px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
+  .agent-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--online); }
+  .agent-card.offline::before { background:var(--offline); }
+  .agent-card:hover { border-color:var(--accent2); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,204,255,0.1); }
+  .agent-card.selected { border-color:var(--accent); background:rgba(0,255,136,0.04); }
+  .agent-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .agent-name { font-family:var(--font-mono); font-size:15px; color:var(--accent2); font-weight:bold; }
+  .agent-id { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-top:2px; }
+  .status-badge { font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:2px; letter-spacing:1px; }
+  .status-badge.online { background:rgba(0,255,136,0.1); color:var(--online); border:1px solid rgba(0,255,136,0.3); }
+  .status-badge.offline { background:rgba(255,68,68,0.1); color:var(--offline); border:1px solid rgba(255,68,68,0.3); }
+  .status-badge.sleep { background:rgba(100,100,100,0.1); color:var(--muted); border:1px solid rgba(100,100,100,0.3); }
+  .agent-info { font-size:13px; color:var(--muted); margin-bottom:10px; line-height:1.6; }
+  .agent-info strong { color:var(--text); }
   .res-bars { display:flex; flex-direction:column; gap:5px; }
   .res-row { display:flex; align-items:center; gap:8px; font-size:12px; font-family:var(--font-mono); }
-  .res-label { color: var(--muted); width:36px; }
-  .res-bar-bg {
-    flex:1; height:4px;
-    background: var(--border);
-    border-radius:2px;
-    overflow:hidden;
-  }
-  .res-bar-fill {
-    height:100%;
-    border-radius:2px;
-    transition: width 0.5s;
-  }
-  .res-bar-fill.cpu { background: var(--accent2); }
-  .res-bar-fill.ram { background: var(--accent); }
-  .res-bar-fill.disk { background: var(--warn); }
+  .res-label { color:var(--muted); width:36px; }
+  .res-bar-bg { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .res-bar-fill { height:100%; border-radius:2px; transition:width 0.5s; }
+  .res-bar-fill.cpu { background:var(--accent2); }
+  .res-bar-fill.ram { background:var(--accent); }
+  .res-bar-fill.disk { background:var(--warn); }
   .res-val { color:var(--text); width:32px; text-align:right; font-size:11px; }
-
-  .last-seen {
-    font-family: var(--font-mono);
-    font-size:11px;
-    color: var(--muted);
-    margin-top:8px;
-  }
-
-  /* SCREENSHOT MODAL */
-  .modal-overlay {
-    display:none;
-    position:fixed; inset:0;
-    background: rgba(0,0,0,0.85);
-    z-index:1000;
-    justify-content:center;
-    align-items:center;
-    backdrop-filter: blur(4px);
-  }
+  .last-seen { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-top:8px; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; backdrop-filter:blur(4px); }
   .modal-overlay.open { display:flex; }
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--accent);
-    padding: 24px;
-    max-width: 90vw;
-    max-height: 90vh;
-    display:flex; flex-direction:column; gap:12px;
-    box-shadow: 0 0 60px rgba(0,255,136,0.2);
-  }
-  .modal-header {
-    display:flex; justify-content:space-between; align-items:center;
-    font-family: var(--font-mono);
-    font-size:14px;
-    color: var(--accent);
-    letter-spacing:2px;
-  }
-  .modal-close {
-    background:none; border:none; color:var(--red);
-    font-size:20px; cursor:pointer;
-  }
-  .modal img {
-    max-width:100%; max-height:70vh;
-    object-fit:contain;
-    border: 1px solid var(--border);
-  }
+  .modal { background:var(--bg2); border:1px solid var(--accent); padding:24px; max-width:90vw; max-height:90vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 0 60px rgba(0,255,136,0.2); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:14px; color:var(--accent); letter-spacing:2px; }
+  .modal-close { background:none; border:none; color:var(--red); font-size:20px; cursor:pointer; }
+  .modal img { max-width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--border); }
   .modal-actions { display:flex; gap:8px; }
-  .modal-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size:12px;
-    padding: 8px 16px;
-    cursor:pointer;
-    transition:all 0.2s;
-  }
-  .modal-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  /* LOG */
-  .log-area {
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    height: 140px;
-    overflow-y:auto;
-    padding: 8px 16px;
-    font-family: var(--font-mono);
-    font-size:12px;
-  }
-  .log-line {
-    padding: 2px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    display:flex; gap:12px;
-  }
-  .log-time { color: var(--muted); white-space:nowrap; }
-  .log-msg { color: var(--text); }
-  .log-msg.ok { color: var(--accent); }
-  .log-msg.err { color: var(--red); }
-  .log-msg.info { color: var(--accent2); }
-  .log-msg.warn { color: var(--warn); }
-
-  /* EMPTY STATE */
-  .empty-state {
-    text-align:center;
-    padding: 80px 20px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-  }
+  .modal-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:12px; padding:8px 16px; cursor:pointer; transition:all 0.2s; }
+  .modal-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .sch-input { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--accent); font-family:var(--font-mono); font-size:14px; padding:8px 12px; outline:none; }
+  .sch-select { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:13px; padding:8px; outline:none; }
+  .log-area { background:var(--bg2); border-top:1px solid var(--border); height:140px; overflow-y:auto; padding:8px 16px; font-family:var(--font-mono); font-size:12px; }
+  .log-line { padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03); display:flex; gap:12px; }
+  .log-time { color:var(--muted); white-space:nowrap; }
+  .log-msg { color:var(--text); }
+  .log-msg.ok { color:var(--accent); }
+  .log-msg.err { color:var(--red); }
+  .log-msg.info { color:var(--accent2); }
+  .log-msg.warn { color:var(--warn); }
+  .empty-state { text-align:center; padding:80px 20px; color:var(--muted); font-family:var(--font-mono); }
   .empty-state .big { font-size:48px; margin-bottom:16px; }
-  .empty-state .title { font-size:16px; color: var(--text); margin-bottom:8px; }
-
-  /* NOTIFICATION */
-  .notif {
-    position:fixed; bottom:20px; right:20px;
-    background: var(--bg3);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size:13px;
-    padding: 12px 20px;
-    z-index:9999;
-    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
-    box-shadow: 0 0 20px rgba(0,255,136,0.2);
-  }
+  .empty-state .title { font-size:16px; color:var(--text); margin-bottom:8px; }
+  .notif { position:fixed; bottom:20px; right:20px; background:var(--bg3); border:1px solid var(--accent); color:var(--accent); font-family:var(--font-mono); font-size:13px; padding:12px 20px; z-index:9999; animation:slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; }
   .notif.err { border-color:var(--red); color:var(--red); }
-  @keyframes slideIn { from{transform:translateX(120%); opacity:0} to{transform:translateX(0); opacity:1} }
-  @keyframes fadeOut { to{opacity:0; transform:translateX(120%)} }
-
+  @keyframes slideIn { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+  @keyframes fadeOut { to{opacity:0;transform:translateX(120%)} }
   ::-webkit-scrollbar { width:4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius:2px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 </style>
 </head>
 <body>
@@ -455,11 +115,12 @@
     <div class="stat-pill">ONLINE: <span id="stat-online">0</span></div>
     <div class="stat-pill warn">OFFLINE: <span id="stat-offline">0</span></div>
     <button onclick="removeOffline()" style="background:rgba(255,68,68,0.15);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(255,68,68,0.3)'" onmouseout="this.style.background='rgba(255,68,68,0.15)'">🗑 REMOVE OFFLINE</button>
+    <button onclick="openScheduleModal()" style="background:rgba(255,204,0,0.15);border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(255,204,0,0.3)'" onmouseout="this.style.background='rgba(255,204,0,0.15)'">⏱ SET SCHEDULE</button>
+    <div id="schedule-status" style="display:none;font-family:var(--font-mono);font-size:11px;color:var(--warn);border:1px solid var(--warn);padding:4px 10px;animation:blink 2s infinite;">⏱ SCHEDULE ON</div>
   </div>
 </div>
 
 <div class="layout">
-  <!-- SIDEBAR -->
   <div class="sidebar">
 
     <div class="sidebar-section">
@@ -467,21 +128,6 @@
       <select class="target-select" id="target-select">
         <option value="all">⬡ ALL MACHINES</option>
       </select>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">// GROUPS</div>
-      <select class="target-select" id="group-select" onchange="selectGroup(this.value)" style="margin-bottom:6px">
-        <option value="">⬡ No Group Filter</option>
-      </select>
-      <div style="display:flex;gap:4px;margin-bottom:4px">
-        <input class="cmd-input" id="new-group-name" placeholder="Group name..." style="margin-bottom:0;flex:1"/>
-        <button onclick="createGroup()" style="background:var(--bg3);border:1px solid var(--accent);color:var(--accent);font-family:var(--font-mono);font-size:11px;padding:4px 8px;cursor:pointer;">+</button>
-      </div>
-      <div style="display:flex;gap:4px">
-        <button onclick="startAddingToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ ADD RDPs</button><button onclick="addToGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✓ SAVE</button>
-        <button onclick="deleteGroup()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;padding:4px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">DELETE GRP</button>
-      </div>
     </div>
 
     <div class="sidebar-section" style="background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.2);">
@@ -494,24 +140,12 @@
     <div class="sidebar-section">
       <div class="sidebar-label">// QUICK COMMANDS</div>
       <div class="cmd-grid">
-        <button class="cmd-btn" onclick="sendCmd('screenshot')">
-          <span class="icon">📸</span>SCREENSHOT
-        </button>
-        <button class="cmd-btn" onclick="sendCmd('get_info')">
-          <span class="icon">📊</span>SYSINFO
-        </button>
-        <button class="cmd-btn warn-btn" onclick="sendCmd('restart')">
-          <span class="icon">🔄</span>RESTART
-        </button>
-        <button class="cmd-btn danger" onclick="sendCmd('shutdown')">
-          <span class="icon">⏻</span>SHUTDOWN
-        </button>
-        <button class="cmd-btn" onclick="sendCmd('lock')">
-          <span class="icon">🔒</span>LOCK
-        </button>
-        <button class="cmd-btn" onclick="openFileModal()">
-          <span class="icon">📂</span>RUN FILE
-        </button>
+        <button class="cmd-btn" onclick="sendCmd('screenshot')"><span class="icon">📸</span>SCREENSHOT</button>
+        <button class="cmd-btn" onclick="sendCmd('get_info')"><span class="icon">📊</span>SYSINFO</button>
+        <button class="cmd-btn warn-btn" onclick="sendCmd('restart')"><span class="icon">🔄</span>RESTART</button>
+        <button class="cmd-btn danger" onclick="sendCmd('shutdown')"><span class="icon">⏻</span>SHUTDOWN</button>
+        <button class="cmd-btn" onclick="sendCmd('lock')"><span class="icon">🔒</span>LOCK</button>
+        <button class="cmd-btn" onclick="openFileModal()"><span class="icon">📂</span>RUN FILE</button>
       </div>
     </div>
 
@@ -544,18 +178,12 @@
 
   </div>
 
-  <!-- MAIN -->
   <div class="main">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('agents', this)">MACHINES</div>
-      <div class="tab" onclick="switchTab('screenshots', this)">SCREENSHOTS</div>
+      <div class="tab active" onclick="switchTab('agents',this)">MACHINES</div>
+      <div class="tab" onclick="switchTab('screenshots',this)">SCREENSHOTS</div>
     </div>
-
-    <div class="content" id="content">
-      <!-- agents or screenshots rendered here -->
-    </div>
-
-    <!-- LOG -->
+    <div class="content" id="content"></div>
     <div class="log-area" id="log"></div>
   </div>
 </div>
@@ -563,10 +191,7 @@
 <!-- SCREENSHOT MODAL -->
 <div class="modal-overlay" id="ss-modal">
   <div class="modal">
-    <div class="modal-header">
-      <span id="modal-title">SCREENSHOT</span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
+    <div class="modal-header"><span id="modal-title">SCREENSHOT</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <img id="modal-img" src="" alt="Screenshot" />
     <div class="modal-actions">
       <button class="modal-btn" onclick="refreshSS()">🔄 Refresh</button>
@@ -578,31 +203,78 @@
 <!-- FILE RUN MODAL -->
 <div class="modal-overlay" id="file-modal">
   <div class="modal">
-    <div class="modal-header">
-      <span>RUN FILE ON TARGET</span>
-      <button class="modal-close" onclick="document.getElementById('file-modal').classList.remove('open')">✕</button>
+    <div class="modal-header"><span>RUN FILE ON TARGET</span><button class="modal-close" onclick="document.getElementById('file-modal').classList.remove('open')">✕</button></div>
+    <input class="cmd-input" id="file-path" placeholder="C:\path\to\file.exe" style="width:400px" />
+    <div class="modal-actions"><button class="modal-btn" onclick="sendRunFile()" style="border-color:var(--accent);color:var(--accent)">▶ RUN</button></div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="schedule-modal">
+  <div class="modal" style="min-width:440px;border-color:var(--warn);">
+    <div class="modal-header" style="color:var(--warn);">
+      <span>⏱ SET SCHEDULE</span>
+      <button class="modal-close" onclick="closeScheduleModal()">✕</button>
     </div>
-    <input class="cmd-input" id="file-path" placeholder="C:\path\to\file.exe or script.bat" style="width:400px" />
-    <div class="modal-actions">
-      <button class="modal-btn" onclick="sendRunFile()" style="border-color:var(--accent);color:var(--accent)">▶ RUN</button>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">RESTART INTERVAL</div>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="sch-value" value="2" min="1" class="sch-input" style="width:80px;text-align:center;" oninput="updateSchInfo()"/>
+          <select id="sch-unit" class="sch-select" onchange="updateSchInfo()">
+            <option value="minutes">MINUTES</option>
+            <option value="hours" selected>HOURS</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">BOT TO RUN AFTER RESTART</div>
+        <select id="sch-bot" class="sch-select" onchange="updateSchInfo()">
+          <option value="1.5">▶ Smart Bot 1.5</option>
+          <option value="1.6">▶ Smart Bot 1.6</option>
+          <option value="none">⏹ None (Restart only)</option>
+        </select>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">RANDOM DELAY AFTER BOOT (seconds)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" id="sch-delay-min" value="2" min="0" class="sch-input" style="width:70px;text-align:center;" oninput="updateSchInfo()"/>
+          <span style="font-family:var(--font-mono);color:var(--muted);">to</span>
+          <input type="number" id="sch-delay-max" value="10" min="0" class="sch-input" style="width:70px;text-align:center;" oninput="updateSchInfo()"/>
+          <span style="font-family:var(--font-mono);color:var(--muted);font-size:12px;">seconds</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">TARGET</div>
+        <select id="sch-target" class="sch-select">
+          <option value="all">⬡ ALL MACHINES</option>
+        </select>
+      </div>
+
+      <div id="sch-info" style="font-family:var(--font-mono);font-size:11px;color:var(--warn);background:var(--bg3);padding:10px;border:1px solid rgba(255,204,0,0.3);line-height:1.6;"></div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveSchedule()" style="flex:1;background:linear-gradient(135deg,rgba(255,204,0,0.2),rgba(255,150,0,0.1));border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">💾 START</button>
+        <button onclick="stopSchedule()" style="flex:1;background:rgba(255,68,68,0.1);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">⏹ STOP</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 const BASE = window.location.origin;
-let allAgents = [];
-let selectedAgent = null;
-let selectedAgents = new Set(); // multi-select
-let currentTab = 'agents';
-let modalAgentId = null;
-let groups = JSON.parse(localStorage.getItem('rdp_groups') || '{}'); // {groupName: [agentId, ...]}
-let currentGroup = null;
+let allAgents = [], selectedAgent = null, currentTab = 'agents', modalAgentId = null;
+let scheduleTimer = null, scheduleConfig = null;
 
 function log(msg, type='info') {
   const el = document.getElementById('log');
   const line = document.createElement('div');
-  line.className='log-line';
+  line.className = 'log-line';
   const t = new Date().toLocaleTimeString();
   line.innerHTML = `<span class="log-time">[${t}]</span><span class="log-msg ${type}">${msg}</span>`;
   el.insertBefore(line, el.firstChild);
@@ -612,22 +284,19 @@ function log(msg, type='info') {
 function notify(msg, err=false) {
   document.querySelectorAll('.notif').forEach(n=>n.remove());
   const n = document.createElement('div');
-  n.className = 'notif' + (err?' err':'');
+  n.className = 'notif'+(err?' err':'');
   n.textContent = msg;
   document.body.appendChild(n);
   setTimeout(()=>n.remove(), 3100);
 }
 
-// FETCH AGENTS
 async function fetchAgents() {
   try {
     const r = await fetch(`${BASE}/api/agents`);
     allAgents = await r.json();
-    updateStats();
-    updateTargetSelect();
-    if(currentTab === 'agents') renderAgents();
-    else renderScreenshots();
-  } catch(e) { log('Server connection failed', 'err'); }
+    updateStats(); updateTargetSelect();
+    if(currentTab==='agents') renderAgents(); else renderScreenshots();
+  } catch(e) { log('Server connection failed','err'); }
 }
 
 function updateStats() {
@@ -652,41 +321,22 @@ function updateTargetSelect() {
 
 function renderAgents() {
   const el = document.getElementById('content');
-  let filtered = allAgents;
-  
-  // Group filter
-  if(currentGroup && groups[currentGroup]) {
-    filtered = allAgents.filter(a => groups[currentGroup].includes(a.id));
-  }
-  
-  if(!filtered.length) {
-    el.innerHTML = `<div class="empty-state"><div class="big">📡</div><div class="title">${currentGroup ? 'NO AGENTS IN GROUP' : 'NO AGENTS CONNECTED'}</div><div>${currentGroup ? 'Add agents to this group' : 'Deploy the .exe agent on your RDP machines'}</div></div>`;
+  if(!allAgents.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big">📡</div><div class="title">NO AGENTS CONNECTED</div><div>Deploy the .exe agent on your RDP machines</div></div>`;
     return;
   }
-  
-  const selCount = selectedAgents.size;
-  const selInfo = selCount > 0 ? `<div style="padding:8px 0 4px;font-family:var(--font-mono);font-size:12px;color:var(--accent);display:flex;align-items:center;gap:12px;">● ${selCount} SELECTED (Ctrl+Click to add more) &nbsp;<button onclick="clearSelection()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">✕ CLEAR</button><button onclick="selectAllVisible()" style="background:none;border:1px solid var(--accent2);color:var(--accent2);font-family:var(--font-mono);font-size:11px;padding:2px 8px;cursor:pointer;">SELECT ALL</button></div>` : `<div style="padding:4px 0;font-family:var(--font-mono);font-size:11px;color:var(--muted);">Ctrl+Click to select multiple RDPs</div>`;
-  
-  el.innerHTML = selInfo + `<div class="agents-grid">${filtered.map(agentCard).join('')}</div>`;
+  el.innerHTML = `<div class="agents-grid">${allAgents.map(agentCard).join('')}</div>`;
 }
 
 function agentCard(a) {
-  const isOff = a.status === 'offline';
-  const cpu = a.cpu || 0, ram = a.ram || 0, disk = a.disk || 0;
+  const isOff = a.status==='offline'; const cpu=a.cpu||0, ram=a.ram||0, disk=a.disk||0;
   const lastSeen = a.last_seen ? timeSince(a.last_seen) : 'Never';
-  const isSelected = selectedAgents.has(a.id);
-  return `
-  <div class="agent-card ${isOff?'offline':''} ${isSelected?'selected':''}" onclick="handleCardClick(event,'${a.id}')" style="${isSelected?'border-color:var(--accent);box-shadow:0 0 16px rgba(0,255,136,0.2)':''}">
+  return `<div class="agent-card ${isOff?'offline':''} ${selectedAgent===a.id?'selected':''}" onclick="selectAgent('${a.id}')">
     <div class="agent-header">
-      <div>
-        <div class="agent-name">${a.hostname}</div>
-        <div class="agent-id">ID: ${a.id} &nbsp;|&nbsp; ${a.username}</div>
-      </div>
+      <div><div class="agent-name">${a.hostname}</div><div class="agent-id">ID: ${a.id} &nbsp;|&nbsp; ${a.username}</div></div>
       <div class="status-badge ${a.status}">${a.status.toUpperCase()}</div>
     </div>
-    <div class="agent-info">
-      <strong>IP:</strong> ${a.ip} &nbsp;&nbsp; <strong>OS:</strong> ${a.os}
-    </div>
+    <div class="agent-info"><strong>IP:</strong> ${a.ip} &nbsp;&nbsp; <strong>OS:</strong> ${a.os}</div>
     <div class="res-bars">
       <div class="res-row"><span class="res-label">CPU</span><div class="res-bar-bg"><div class="res-bar-fill cpu" style="width:${cpu}%"></div></div><span class="res-val">${cpu}%</span></div>
       <div class="res-row"><span class="res-label">RAM</span><div class="res-bar-bg"><div class="res-bar-fill ram" style="width:${ram}%"></div></div><span class="res-val">${ram}%</span></div>
@@ -703,445 +353,231 @@ function agentCard(a) {
 
 function renderScreenshots() {
   const el = document.getElementById('content');
-  el.innerHTML = `<div class="agents-grid">${allAgents.map(ssCard).join('')}</div>`;
-}
-
-function ssCard(a) {
-  return `
+  el.innerHTML = `<div class="agents-grid">${allAgents.map(a=>`
   <div class="agent-card ${a.status==='offline'?'offline':''}" onclick="viewScreenshot('${a.id}')">
-    <div class="agent-header">
-      <div><div class="agent-name">${a.hostname}</div><div class="agent-id">${a.id}</div></div>
-      <div class="status-badge ${a.status}">${a.status.toUpperCase()}</div>
-    </div>
-    <div style="background:var(--bg3);border:1px solid var(--border);height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;cursor:pointer;margin-top:8px;">
-      Click to view screenshot
-    </div>
-  </div>`;
+    <div class="agent-header"><div><div class="agent-name">${a.hostname}</div><div class="agent-id">${a.id}</div></div><div class="status-badge ${a.status}">${a.status.toUpperCase()}</div></div>
+    <div style="background:var(--bg3);border:1px solid var(--border);height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;margin-top:8px;">Click to view screenshot</div>
+  </div>`).join('')}</div>`;
 }
 
 function selectAgent(id) {
-  selectedAgent = selectedAgent === id ? null : id;
-  document.getElementById('target-select').value = selectedAgent || 'all';
+  selectedAgent = selectedAgent===id ? null : id;
+  document.getElementById('target-select').value = selectedAgent||'all';
   renderAgents();
 }
 
-// COMMANDS
-function getTarget() {
-  return document.getElementById('target-select').value || 'all';
-}
+function getTarget() { return document.getElementById('target-select').value||'all'; }
 
 async function sendCmd(type, payload={}, target=null) {
-  // Agar explicit target diya hai (jaise quickCmd se) to wahi use karo
-  if(target) {
-    try {
-      const r = await fetch(`${BASE}/api/command`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target, type, payload})
-      });
-      const d = await r.json();
-      log(`CMD [${type}] → ${target}: ${d.message}`, 'ok');
-      notify(`✓ ${type.toUpperCase()} sent`);
-    } catch(e) {
-      log(`Failed to send ${type}`, 'err');
-      notify('Command failed!', true);
-    }
-    return;
-  }
-
-  // Agar multiple selected hain to sirf unko bhejo
-  if(selectedAgents.size > 1) {
-    let count = 0;
-    for(const aid of selectedAgents) {
-      try {
-        await fetch(`${BASE}/api/command`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({target:aid, type, payload})
-        });
-        count++;
-      } catch(e) {}
-    }
-    log(`CMD [${type}] → ${count} selected agents`, 'ok');
-    notify(`✓ ${type.toUpperCase()} sent to ${count} agents`);
-    return;
-  }
-
-  // Single selected ya dropdown se
-  const t = selectedAgents.size === 1 ? [...selectedAgents][0] : getTarget();
+  const t = target||getTarget();
   try {
-    const r = await fetch(`${BASE}/api/command`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({target:t, type, payload})
-    });
+    const r = await fetch(`${BASE}/api/command`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:t,type,payload})});
     const d = await r.json();
-    log(`CMD [${type}] → ${t}: ${d.message}`, 'ok');
+    log(`CMD [${type}] → ${t}: ${d.message}`,'ok');
     notify(`✓ ${type.toUpperCase()} sent`);
-  } catch(e) {
-    log(`Failed to send ${type}`, 'err');
-    notify('Command failed!', true);
-  }
+  } catch(e) { log(`Failed: ${type}`,'err'); notify('Command failed!',true); }
 }
 
-// Card click handler - Ctrl for multi-select
-function handleCardClick(event, agentId) {
-  event.stopPropagation();
-  if(event.ctrlKey || event.metaKey) {
-    // Ctrl+Click = toggle selection
-    if(selectedAgents.has(agentId)) {
-      selectedAgents.delete(agentId);
-    } else {
-      selectedAgents.add(agentId);
-    }
-  } else {
-    // Normal click = single select only
-    selectedAgents.clear();
-    selectedAgents.add(agentId);
-    selectedAgent = agentId;
-  }
-  // Update target dropdown
-  if(selectedAgents.size === 1) {
-    document.getElementById('target-select').value = [...selectedAgents][0];
-  } else {
-    document.getElementById('target-select').value = 'all';
-  }
-  renderAgents();
-}
-
-function clearSelection() {
-  selectedAgents.clear();
-  selectedAgent = null;
-  document.getElementById('target-select').value = 'all';
-  renderAgents();
-}
-
-function selectAllVisible() {
-  let filtered = allAgents;
-  if(currentGroup && groups[currentGroup]) {
-    filtered = allAgents.filter(a => groups[currentGroup].includes(a.id));
-  }
-  filtered.forEach(a => selectedAgents.add(a.id));
-  renderAgents();
-}
-
-// GROUP FUNCTIONS
-function updateGroupSelect() {
-  const sel = document.getElementById('group-select');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">⬡ No Group Filter</option>';
-  Object.keys(groups).forEach(g => {
-    const opt = document.createElement('option');
-    opt.value = g;
-    opt.textContent = `📁 ${g} (${(groups[g]||[]).length})`;
-    sel.appendChild(opt);
-  });
-  if(cur) sel.value = cur;
-}
-
-function selectGroup(groupName) {
-  currentGroup = groupName || null;
-  selectedAgents.clear();
-  if(groupName && groups[groupName]) {
-    // Auto select all agents in this group
-    groups[groupName].forEach(id => selectedAgents.add(id));
-    log(`Group "${groupName}" selected: ${groups[groupName].length} agents`, 'info');
-  }
-  renderAgents();
-}
-
-function createGroup() {
-  const name = document.getElementById('new-group-name').value.trim();
-  if(!name) { notify('Group name daalo!', true); return; }
-  if(groups[name]) { notify('Group already exists!', true); return; }
-  groups[name] = [];
-  localStorage.setItem('rdp_groups', JSON.stringify(groups));
-  document.getElementById('new-group-name').value = '';
-  updateGroupSelect();
-  notify(`✓ Group "${name}" created`);
-}
-
-function addToGroup() {
-  const groupName = document.getElementById('group-select').value;
-  if(!groupName) { notify('Pehle group select karo!', true); return; }
-  if(selectedAgents.size === 0) { 
-    notify('Pehle Ctrl+Click se RDPs select karo!', true); 
-    // Hint: group filter hatao taake sab RDPs dikhein
-    currentGroup = null;
-    document.getElementById('group-select').value = '';
-    renderAgents();
-    return; 
-  }
-  if(!groups[groupName]) groups[groupName] = [];
-  let added = 0;
-  selectedAgents.forEach(id => {
-    if(!groups[groupName].includes(id)) { groups[groupName].push(id); added++; }
-  });
-  localStorage.setItem('rdp_groups', JSON.stringify(groups));
-  updateGroupSelect();
-  // Group select karo wapis
-  document.getElementById('group-select').value = groupName;
-  notify(`✓ ${added} agents added to "${groupName}"`);
-  log(`Added ${added} agents to group: ${groupName}`, 'ok');
-}
-
-function startAddingToGroup() {
-  // Group select karo, phir filter hatao taake sab RDPs dikhein
-  const groupName = document.getElementById('group-select').value;
-  if(!groupName) { notify('Pehle group select karo!', true); return; }
-  currentGroup = null; // filter hatao
-  notify(`Ctrl+Click se RDPs select karo, phir ADD SELECTED dabao`);
-  renderAgents();
-}
-
-function deleteGroup() {
-  const groupName = document.getElementById('group-select').value;
-  if(!groupName) { notify('Group select karo!', true); return; }
-  if(!confirm(`Delete group "${groupName}"?`)) return;
-  delete groups[groupName];
-  localStorage.setItem('rdp_groups', JSON.stringify(groups));
-  currentGroup = null;
-  updateGroupSelect();
-  renderAgents();
-  notify(`Group "${groupName}" deleted`);
-}
-
-async function quickCmd(agentId, type) {
-  await sendCmd(type, {}, agentId);
-}
+async function quickCmd(agentId, type) { await sendCmd(type,{},agentId); }
 
 function sendLaunch() {
   const path = document.getElementById('app-path').value.trim();
-  if(!path) { notify('Enter app path!', true); return; }
-  sendCmd('launch', {path});
-}
-
-async function wakeAll() {
-  // Agar selected hain to sirf unko wake karo
-  if(selectedAgents.size > 0) {
-    for(const aid of selectedAgents) {
-      await fetch(`${BASE}/api/command`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target:aid, type:'wake_agent', payload:{}})
-      });
-    }
-    log(`⚡ WAKE sent to ${selectedAgents.size} selected agents`, 'ok');
-    notify(`⚡ ${selectedAgents.size} agents WAKING UP!`);
-    return;
-  }
-  // Koi select nahi to sab ko wake karo
-  try {
-    const r = await fetch(`${BASE}/api/wake`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    const d = await r.json();
-    log('⚡ WAKE UP sent to all agents', 'ok');
-    notify('⚡ All agents WAKING UP!');
-    updateModeStatus('wake');
-  } catch(e) { notify('Wake failed!', true); }
-}
-
-async function sleepAll() {
-  // Agar selected hain to sirf unko sleep karo
-  if(selectedAgents.size > 0) {
-    for(const aid of selectedAgents) {
-      await fetch(`${BASE}/api/command`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target:aid, type:'sleep_agent', payload:{}})
-      });
-    }
-    log(`💤 SLEEP sent to ${selectedAgents.size} selected agents`, 'warn');
-    notify(`💤 ${selectedAgents.size} agents SLEEPING`);
-    return;
-  }
-  // Koi select nahi to sab ko sleep karo
-  try {
-    const r = await fetch(`${BASE}/api/sleep`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    const d = await r.json();
-    log('💤 SLEEP sent to all agents', 'warn');
-    notify('💤 All agents SLEEPING');
-    updateModeStatus('sleep');
-  } catch(e) { notify('Sleep failed!', true); }
-}
-
-function updateModeStatus(mode) {
-  const el = document.getElementById('mode-status');
-  const wakeBtn = document.getElementById('wake-btn');
-  const sleepBtn = document.getElementById('sleep-btn');
-  if(!el) return;
-  if(mode === 'wake') {
-    el.innerHTML = '● MODE: <span style="color:var(--accent)">ACTIVE</span>';
-    wakeBtn.style.borderColor = 'var(--accent)';
-    wakeBtn.style.color = 'var(--accent)';
-    sleepBtn.style.borderColor = 'var(--muted)';
-    sleepBtn.style.color = 'var(--muted)';
-  } else {
-    el.innerHTML = '● MODE: <span style="color:var(--muted)">SLEEPING</span>';
-    wakeBtn.style.borderColor = 'var(--muted)';
-    wakeBtn.style.color = 'var(--muted)';
-    sleepBtn.style.borderColor = 'var(--accent2)';
-    sleepBtn.style.color = 'var(--accent2)';
-  }
-}
-
-async function checkMode() {
-  try {
-    const r = await fetch(`${BASE}/api/mode`);
-    const d = await r.json();
-    updateModeStatus(d.mode);
-  } catch(e) {}
-}
-
-async function removeAgent(agentId) {
-  if(!confirm('Remove this agent?')) return;
-  try {
-    const r = await fetch(`${BASE}/api/remove_agent`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({agent_id: agentId})
-    });
-    const d = await r.json();
-    log(`🗑 Agent ${agentId} removed`, 'warn');
-    notify('Agent removed');
-    fetchAgents();
-  } catch(e) { notify('Remove failed!', true); }
-}
-
-async function removeOffline() {
-  const offlineCount = allAgents.filter(a => a.status === 'offline' || a.status === 'sleep').length;
-  if(offlineCount === 0) { notify('No offline agents!', true); return; }
-  if(!confirm(`Remove ${offlineCount} offline agents?`)) return;
-  try {
-    const r = await fetch(`${BASE}/api/remove_offline`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
-    });
-    const d = await r.json();
-    log(`🗑 Removed ${d.count} offline agents`, 'warn');
-    notify(`✓ ${d.count} offline agents removed`);
-    fetchAgents();
-  } catch(e) { notify('Remove failed!', true); }
-}
-
-function runBot16() {
-  sendCmd('launch_and_enter', {path: 'Smartbot16\\Smartbot16\\Smart bot 1.6.exe', wait1: 7, wait2: 4});
-  notify('▶ Bot 1.6 launching...');
-  log('BOT 1.6 RUN sent', 'ok');
-}
-
-function closeBot16() {
-  const cmd = String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.6'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.6*'"`;
-  sendCmd('shell', {cmd});
-  notify('✕ Bot 1.6 closing...');
-  log('BOT 1.6 CLOSE sent', 'warn');
-}
-
-function runBot() {
-  sendCmd('launch_and_enter', {path: 'Smartbot15\\Smartbot15\\Smart bot 1.5.exe', wait1: 7, wait2: 4});
-  notify('▶ Bot launching...');
-  log('BOT RUN sent', 'ok');
-}
-
-function closeBot() {
-  const cmd = String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`;
-  sendCmd('shell', {cmd});
-  notify('✕ Bot closing on target...');
-  log('BOT CLOSE command sent', 'warn');
+  if(!path){notify('Enter app path!',true);return;}
+  sendCmd('launch',{path});
 }
 
 function sendLaunchAndEnter() {
-  const path = document.getElementById("app-path").value.trim();
-  if(!path) { notify("Enter app path!", true); return; }
-  sendCmd("launch_and_enter", {path, wait1: 7, wait2: 5});
-  notify("⏎ Launch + 2x Enter sent!");
+  const path = document.getElementById('app-path').value.trim();
+  if(!path){notify('Enter app path!',true);return;}
+  sendCmd('launch_and_enter',{path,wait1:7,wait2:5});
+  notify('⏎ Launch + 2x Enter sent!');
 }
 
+function runBot() { sendCmd('launch_and_enter',{path:'Smartbot15\\Smartbot15\\Smart bot 1.5.exe',wait1:7,wait2:4}); notify('▶ Bot 1.5 launching...'); }
+function closeBot() { sendCmd('shell',{cmd:String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`}); notify('✕ Bot 1.5 closing...'); }
+function runBot16() { sendCmd('launch_and_enter',{path:'Smartbot16\\Smartbot16\\Smart bot 1.6.exe',wait1:7,wait2:4}); notify('▶ Bot 1.6 launching...'); }
+function closeBot16() { sendCmd('shell',{cmd:String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.6'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.6*'"`}); notify('✕ Bot 1.6 closing...'); }
 
 function sendCustom() {
   const cmd = document.getElementById('custom-cmd').value.trim();
-  if(!cmd) { notify('Enter command!', true); return; }
-  sendCmd('shell', {cmd});
+  if(!cmd) return;
+  sendCmd('shell',{cmd});
   document.getElementById('custom-cmd').value='';
 }
 
 function sendMessage() {
   const msg = document.getElementById('msg-text').value.trim();
   if(!msg) return;
-  sendCmd('message', {text: msg});
+  sendCmd('message',{text:msg});
   document.getElementById('msg-text').value='';
 }
 
-function openFileModal() {
-  document.getElementById('file-modal').classList.add('open');
+async function wakeAll() {
+  const r = await fetch(`${BASE}/api/wake`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const d = await r.json();
+  log('⚡ WAKE UP sent','ok'); notify('⚡ All agents WAKING UP!'); updateModeStatus('wake');
 }
 
-function sendRunFile() {
-  const path = document.getElementById('file-path').value.trim();
-  if(!path) { notify('Enter file path!', true); return; }
-  sendCmd('run_file', {path});
-  document.getElementById('file-modal').classList.remove('open');
+async function sleepAll() {
+  const r = await fetch(`${BASE}/api/sleep`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  log('💤 SLEEP sent','warn'); notify('💤 All agents SLEEPING'); updateModeStatus('sleep');
 }
 
-// SCREENSHOT
+function updateModeStatus(mode) {
+  const el=document.getElementById('mode-status'),wb=document.getElementById('wake-btn'),sb=document.getElementById('sleep-btn');
+  if(!el) return;
+  if(mode==='wake'){el.innerHTML='● MODE: <span style="color:var(--accent)">ACTIVE</span>';wb.style.borderColor='var(--accent)';wb.style.color='var(--accent)';sb.style.borderColor='var(--muted)';sb.style.color='var(--muted)';}
+  else{el.innerHTML='● MODE: <span style="color:var(--muted)">SLEEPING</span>';wb.style.borderColor='var(--muted)';wb.style.color='var(--muted)';sb.style.borderColor='var(--accent2)';sb.style.color='var(--accent2)';}
+}
+
+async function checkMode() {
+  try{const r=await fetch(`${BASE}/api/mode`);const d=await r.json();updateModeStatus(d.mode);}catch(e){}
+}
+
+async function removeAgent(agentId) {
+  if(!confirm('Remove this agent?')) return;
+  await fetch(`${BASE}/api/remove_agent`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:agentId})});
+  log(`🗑 Agent ${agentId} removed`,'warn'); notify('Agent removed'); fetchAgents();
+}
+
+async function removeOffline() {
+  const c = allAgents.filter(a=>a.status==='offline'||a.status==='sleep').length;
+  if(!c){notify('No offline agents!',true);return;}
+  if(!confirm(`Remove ${c} offline agents?`)) return;
+  const r=await fetch(`${BASE}/api/remove_offline`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const d=await r.json();
+  log(`🗑 Removed ${d.count} agents`,'warn'); notify(`✓ ${d.count} removed`); fetchAgents();
+}
+
+function openFileModal(){document.getElementById('file-modal').classList.add('open');}
+function sendRunFile(){const path=document.getElementById('file-path').value.trim();if(!path)return;sendCmd('run_file',{path});document.getElementById('file-modal').classList.remove('open');}
+
 async function viewScreenshot(agentId) {
-  // Request a fresh one
-  await fetch(`${BASE}/api/request_screenshot`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({target: agentId})
-  });
-  log(`Screenshot requested from ${agentId}`, 'info');
-  modalAgentId = agentId;
-
-  // Poll for result
-  let attempts = 0;
-  const poll = async () => {
-    try {
-      const r = await fetch(`${BASE}/api/screenshot/${agentId}`);
-      if(r.ok) {
-        const d = await r.json();
-        const modal = document.getElementById('ss-modal');
-        const img = document.getElementById('modal-img');
-        const title = document.getElementById('modal-title');
-        const agent = allAgents.find(a=>a.id===agentId);
-        title.textContent = `SCREENSHOT — ${agent?agent.hostname:agentId} [${new Date(d.timestamp).toLocaleTimeString()}]`;
-        img.src = 'data:image/png;base64,' + d.data;
-        modal.classList.add('open');
-        log(`Screenshot received from ${agentId}`, 'ok');
-        return;
-      }
-    } catch(e){}
-    if(++attempts < 15) setTimeout(poll, 500);
-    else { log('Screenshot timeout', 'warn'); notify('Screenshot timeout', true); }
+  await fetch(`${BASE}/api/request_screenshot`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:agentId})});
+  log(`Screenshot requested from ${agentId}`,'info'); modalAgentId=agentId;
+  let attempts=0;
+  const poll=async()=>{
+    try{const r=await fetch(`${BASE}/api/screenshot/${agentId}`);if(r.ok){const d=await r.json();const agent=allAgents.find(a=>a.id===agentId);document.getElementById('modal-title').textContent=`SCREENSHOT — ${agent?agent.hostname:agentId}`;document.getElementById('modal-img').src='data:image/png;base64,'+d.data;document.getElementById('ss-modal').classList.add('open');log(`Screenshot received`,'ok');return;}}catch(e){}
+    if(++attempts<15) setTimeout(poll,500); else{log('Screenshot timeout','warn');notify('Timeout',true);}
   };
-  setTimeout(poll, 600);
+  setTimeout(poll,600);
 }
 
-function refreshSS() {
-  if(modalAgentId) {
-    document.getElementById('ss-modal').classList.remove('open');
-    viewScreenshot(modalAgentId);
+function refreshSS(){if(modalAgentId){document.getElementById('ss-modal').classList.remove('open');viewScreenshot(modalAgentId);}}
+function downloadSS(){const img=document.getElementById('modal-img');const a=document.createElement('a');a.href=img.src;a.download=`ss_${modalAgentId}_${Date.now()}.png`;a.click();}
+function closeModal(){document.getElementById('ss-modal').classList.remove('open');}
+
+function switchTab(tab,el){currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');if(tab==='agents')renderAgents();else renderScreenshots();}
+function timeSince(isoStr){const diff=(Date.now()-new Date(isoStr).getTime())/1000;if(diff<5)return'just now';if(diff<60)return Math.round(diff)+'s ago';if(diff<3600)return Math.round(diff/60)+'m ago';return Math.round(diff/3600)+'h ago';}
+
+// ── SCHEDULE ─────────────────────────────────────────────────
+
+function openScheduleModal() {
+  // Target dropdown populate karo
+  const sel = document.getElementById('sch-target');
+  sel.innerHTML = '<option value="all">⬡ ALL MACHINES</option>';
+  allAgents.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.hostname} [${a.id}]`;
+    sel.appendChild(opt);
+  });
+  if(scheduleConfig) {
+    document.getElementById('sch-value').value = scheduleConfig.value;
+    document.getElementById('sch-unit').value = scheduleConfig.unit;
+    document.getElementById('sch-bot').value = scheduleConfig.bot;
+    document.getElementById('sch-delay-min').value = scheduleConfig.delayMin;
+    document.getElementById('sch-delay-max').value = scheduleConfig.delayMax;
+    document.getElementById('sch-target').value = scheduleConfig.target;
   }
+  updateSchInfo();
+  document.getElementById('schedule-modal').classList.add('open');
 }
 
-function downloadSS() {
-  const img = document.getElementById('modal-img');
-  const a = document.createElement('a');
-  a.href = img.src;
-  a.download = `screenshot_${modalAgentId}_${Date.now()}.png`;
-  a.click();
+function closeScheduleModal() {
+  document.getElementById('schedule-modal').classList.remove('open');
 }
 
-function closeModal() {
-  document.getElementById('ss-modal').classList.remove('open');
+function updateSchInfo() {
+  const val = parseInt(document.getElementById('sch-value').value)||1;
+  const unit = document.getElementById('sch-unit').value;
+  const bot = document.getElementById('sch-bot').value;
+  const dMin = document.getElementById('sch-delay-min').value;
+  const dMax = document.getElementById('sch-delay-max').value;
+  const ms = unit==='hours' ? val*3600000 : val*60000;
+  const nextTime = new Date(Date.now()+ms).toLocaleTimeString();
+  const botText = bot==='none' ? 'No bot (restart only)' : `Bot ${bot} will start`;
+  document.getElementById('sch-info').innerHTML =
+    `⏱ Restart every: <b>${val} ${unit}</b><br>` +
+    `🤖 After restart: <b>${botText}</b><br>` +
+    `⏳ Random delay: <b>${dMin}-${dMax} seconds</b><br>` +
+    `🕐 First restart at: <b>~${nextTime}</b>`;
 }
 
-function switchTab(tab, el) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  if(tab==='agents') renderAgents();
-  else renderScreenshots();
+function saveSchedule() {
+  const val = parseInt(document.getElementById('sch-value').value)||1;
+  const unit = document.getElementById('sch-unit').value;
+  const bot = document.getElementById('sch-bot').value;
+  const delayMin = parseInt(document.getElementById('sch-delay-min').value)||2;
+  const delayMax = parseInt(document.getElementById('sch-delay-max').value)||10;
+  const target = document.getElementById('sch-target').value;
+  const intervalMs = unit==='hours' ? val*3600000 : val*60000;
+
+  scheduleConfig = {value:val, unit, bot, delayMin, delayMax, target, intervalMs};
+
+  if(scheduleTimer) clearInterval(scheduleTimer);
+  scheduleTimer = setInterval(runSchedule, intervalMs);
+
+  document.getElementById('schedule-status').style.display = 'block';
+  document.getElementById('schedule-status').textContent = `⏱ ${val} ${unit}`;
+
+  closeScheduleModal();
+  log(`⏱ Schedule started: every ${val} ${unit} | bot ${bot} | target: ${target}`, 'ok');
+  notify(`✓ Schedule started! Restart every ${val} ${unit}`);
 }
 
-function timeSince(isoStr) {
-  const diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
-  if(diff < 5) return 'just now';
-  if(diff < 60) return Math.round(diff) + 's ago';
-  if(diff < 3600) return Math.round(diff/60) + 'm ago';
-  return Math.round(diff/3600) + 'h ago';
+async function runSchedule() {
+  if(!scheduleConfig) return;
+  const {bot, delayMin, delayMax, target} = scheduleConfig;
+
+  log(`⏱ Schedule: RESTART → ${target}`, 'warn');
+  notify(`⏱ Schedule restart running...`);
+
+  // Restart bhejo
+  await fetch(`${BASE}/api/command`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({target, type:'restart', payload:{}})
+  });
+
+  if(bot==='none') return;
+
+  // 2 minute wait (system boot) + random delay
+  const randomSec = Math.floor(Math.random()*(delayMax-delayMin+1)+delayMin);
+  const totalWait = 120000 + (randomSec * 1000); // 2 min + random seconds
+
+  log(`⏱ Waiting ${Math.round(totalWait/1000)}s for boot + random delay (${randomSec}s)...`, 'info');
+
+  setTimeout(async () => {
+    const path = bot==='1.5'
+      ? 'Smartbot15\\\\Smartbot15\\\\Smart bot 1.5.exe'
+      : 'Smartbot16\\\\Smartbot16\\\\Smart bot 1.6.exe';
+
+    await fetch(`${BASE}/api/command`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({target, type:'launch_and_enter', payload:{path, wait1:7, wait2:4}})
+    });
+    log(`⏱ Bot ${bot} launched after restart`, 'ok');
+    notify(`✓ Bot ${bot} launched after restart!`);
+  }, totalWait);
+}
+
+function stopSchedule() {
+  if(scheduleTimer) { clearInterval(scheduleTimer); scheduleTimer=null; }
+  scheduleConfig = null;
+  document.getElementById('schedule-status').style.display='none';
+  closeScheduleModal();
+  log('⏱ Schedule stopped', 'warn');
+  notify('Schedule stopped');
 }
 
 // POLL
@@ -1149,9 +585,8 @@ fetchAgents();
 setInterval(fetchAgents, 5000);
 checkMode();
 setInterval(checkMode, 10000);
-updateGroupSelect();
-log('Admin panel initialized', 'ok');
-log('Waiting for agents...', 'info');
+log('Admin panel initialized','ok');
+log('Waiting for agents...','info');
 </script>
 </body>
 </html>
