@@ -269,7 +269,7 @@
 <script>
 const BASE = window.location.origin;
 let allAgents = [], selectedAgent = null, currentTab = 'agents', modalAgentId = null;
-let scheduleTimer = null, scheduleConfig = null;
+
 
 function log(msg, type='info') {
   const el = document.getElementById('log');
@@ -585,6 +585,8 @@ fetchAgents();
 setInterval(fetchAgents, 5000);
 checkMode();
 setInterval(checkMode, 10000);
+checkScheduleStatus();
+setInterval(checkScheduleStatus, 15000);
 log('Admin panel initialized','ok');
 log('Waiting for agents...','info');
 </script>
