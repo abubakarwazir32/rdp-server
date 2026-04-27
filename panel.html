@@ -269,6 +269,7 @@
 <script>
 const BASE = window.location.origin;
 let allAgents = [], selectedAgent = null, currentTab = 'agents', modalAgentId = null;
+let scheduleConfig = null;
 
 
 function log(msg, type='info') {
@@ -578,6 +579,21 @@ function stopSchedule() {
   closeScheduleModal();
   log('⏱ Schedule stopped', 'warn');
   notify('Schedule stopped');
+}
+
+async function checkScheduleStatus() {
+  try {
+    const r = await fetch(`${BASE}/api/schedule/get`);
+    const schedules = await r.json();
+    const el = document.getElementById('schedule-status');
+    if(Object.keys(schedules).length > 0) {
+      const cfg = Object.values(schedules)[0];
+      el.style.display = 'block';
+      el.textContent = `⏱ ${cfg.value} ${cfg.unit}`;
+    } else {
+      el.style.display = 'none';
+    }
+  } catch(e) {}
 }
 
 // POLL
