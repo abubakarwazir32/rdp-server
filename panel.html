@@ -398,33 +398,49 @@ function sendLaunchAndEnter() {
 function runBot() {
   const target = document.getElementById('target-select').value;
   const targets = target === 'all' ? allAgents.map(a=>a.id) : [target];
-  targets.forEach(aid => {
-    const delay = Math.floor(Math.random() * 80000) + 40000; // 40-120 sec
+  let delay = 0;
+  for(let i = 0; i < targets.length; i += Math.floor(Math.random()*2)+3) {
+    const batch = targets.slice(i, i + Math.floor(Math.random()*2)+3);
+    const wait = Math.floor(Math.random()*3000)+6000; // 6-9 sec
+    const d = delay;
     setTimeout(() => {
-      fetch(`${BASE}/api/command`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot15\\\\Smartbot15\\\\Smart bot 1.5.exe', wait1:7, wait2:4}})
+      batch.forEach(aid => {
+        fetch(`${BASE}/api/command`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot15\\\\Smartbot15\\\\Smart bot 1.5.exe', wait1:7, wait2:4}})
+        });
       });
-    }, delay);
-  });
-  notify(`▶ Bot 1.5 → ${targets.length} RDPs (40-120s random)`);
-  log(`Bot 1.5 queued: ${targets.length} RDPs with random delay`, 'ok');
+      log(`⏱ Bot 1.5 batch → ${batch.length} RDPs`, 'ok');
+    }, d);
+    delay += wait;
+  }
+  const totalSec = Math.round(delay/1000);
+  notify(`▶ Bot 1.5 → ${targets.length} RDPs in batches (~${totalSec}s total)`);
+  log(`Bot 1.5: ${targets.length} RDPs, batches of 3-4, 6-9s gap, ~${totalSec}s total`, 'ok');
 }
 function closeBot() { sendCmd('shell',{cmd:String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`}); notify('✕ Bot 1.5 closing...'); }
 function runBot16() {
   const target = document.getElementById('target-select').value;
   const targets = target === 'all' ? allAgents.map(a=>a.id) : [target];
-  targets.forEach(aid => {
-    const delay = Math.floor(Math.random() * 80000) + 40000; // 40-120 sec
+  let delay = 0;
+  for(let i = 0; i < targets.length; i += Math.floor(Math.random()*2)+3) {
+    const batch = targets.slice(i, i + Math.floor(Math.random()*2)+3);
+    const wait = Math.floor(Math.random()*3000)+6000; // 6-9 sec
+    const d = delay;
     setTimeout(() => {
-      fetch(`${BASE}/api/command`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot16\\\\Smartbot16\\\\Smart bot 1.6.exe', wait1:7, wait2:4}})
+      batch.forEach(aid => {
+        fetch(`${BASE}/api/command`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot16\\\\Smartbot16\\\\Smart bot 1.6.exe', wait1:7, wait2:4}})
+        });
       });
-    }, delay);
-  });
-  notify(`▶ Bot 1.6 → ${targets.length} RDPs (40-120s random)`);
-  log(`Bot 1.6 queued: ${targets.length} RDPs with random delay`, 'ok');
+      log(`⏱ Bot 1.6 batch → ${batch.length} RDPs`, 'ok');
+    }, d);
+    delay += wait;
+  }
+  const totalSec = Math.round(delay/1000);
+  notify(`▶ Bot 1.6 → ${targets.length} RDPs in batches (~${totalSec}s total)`);
+  log(`Bot 1.6: ${targets.length} RDPs, batches of 3-4, 6-9s gap, ~${totalSec}s total`, 'ok');
 }
 function closeBot16() { sendCmd('shell',{cmd:String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.6'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.6*'"`}); notify('✕ Bot 1.6 closing...'); }
 
