@@ -269,7 +269,7 @@ def run_bot_batches():
         time.sleep(wait_sec)
 
 def autopilot_cycle(key):
-    """Ek autopilot cycle"""
+    """Auto Pilot cycle - pehle interval wait, phir kaam"""
     cfg = autopilot_config.get(key)
     if not cfg: return
 
@@ -278,30 +278,46 @@ def autopilot_cycle(key):
     interval_sec = cfg["intervalMs"] / 1000
 
     while autopilot_running.get(key):
-        # Step 1: Wake All
+        # Step 1: Pehle interval wait karo
+        elapsed = 0
+        while elapsed < interval_sec:
+            if not autopilot_running.get(key): return
+            time.sleep(1)
+            elapsed += 1
+
+        if not autopilot_running.get(key): break
+
+        # Step 2: Wake All
         system_state["mode"] = "wake"
         for a in agents.values(): a["status"] = "online"
 
-        # Step 2: Close Bot
+        # Step 3: Close Bot
         send_close_bot()
 
-        # Step 3: Wait close_wait
-        time.sleep(close_wait)
+        # Step 4: Wait close_wait (1 sec chunks for stop check)
+        elapsed = 0
+        while elapsed < close_wait:
+            if not autopilot_running.get(key): return
+            time.sleep(1)
+            elapsed += 1
+
         if not autopilot_running.get(key): break
 
-        # Step 4: Run Bot batches
+        # Step 5: Run Bot batches
         run_bot_batches()
 
-        # Step 5: Wait run_wait
-        time.sleep(run_wait)
+        # Step 6: Wait run_wait (1 sec chunks for stop check)
+        elapsed = 0
+        while elapsed < run_wait:
+            if not autopilot_running.get(key): return
+            time.sleep(1)
+            elapsed += 1
+
         if not autopilot_running.get(key): break
 
-        # Step 6: Sleep All
+        # Step 7: Sleep All
         system_state["mode"] = "sleep"
         for a in agents.values(): a["status"] = "sleep"
-
-        # Step 7: Wait interval
-        time.sleep(interval_sec)
 
 @app.route("/api/autopilot/start", methods=["POST"])
 def autopilot_start():
@@ -330,9 +346,12 @@ def autopilot_stop():
 
 @app.route("/api/autopilot/get", methods=["GET"])
 def autopilot_get():
+    cfg = autopilot_config.get("main", {})
     return jsonify({
         "running": autopilot_running.get("main", False),
-        "config": autopilot_config.get("main", {})
+        "config": cfg,
+        "intervalVal": cfg.get("intervalVal", 1),
+        "intervalUnit": cfg.get("intervalUnit", "hours"),
     })
 
 @app.route("/health")
