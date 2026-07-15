@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import uuid, os, threading, time
+import uuid, os, threading, time, random
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -14,8 +14,12 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "rdp-manager-secret-2024")
 system_state = {"mode": "sleep"}
 
 # Schedule storage
-schedule_config = {}  # target -> config
-schedule_timers = {}  # target -> timer thread
+schedule_config = {}
+schedule_timers = {}
+
+# Auto Pilot storage
+autopilot_config = {}
+autopilot_running = {}
 
 def now():
     return datetime.now(timezone.utc).isoformat()
@@ -169,57 +173,36 @@ def remove_offline():
 # ── SCHEDULE API ──────────────────────────────────────────────
 
 def run_schedule_job(key):
-    """Background thread - schedule execute karta hai"""
     cfg = schedule_config.get(key)
     if not cfg: return
-
     target = cfg["target"]
     bot = cfg["bot"]
     delay_min = cfg["delayMin"]
     delay_max = cfg["delayMax"]
-
-    # Restart command bhejo
     restart_cmd = {"id": str(uuid.uuid4())[:8], "type": "restart", "payload": {}, "issued_at": now()}
     if target == "all":
         for aid in agents: commands[aid].append(restart_cmd)
     else:
         commands[target].append(restart_cmd)
-
-    if bot == "none":
-        return
-
-    # Random delay calculate karo
-    import random
+    if bot == "none": return
     random_sec = random.randint(delay_min, delay_max)
-    total_wait = 120 + random_sec  # 2 min boot + random seconds
-
+    total_wait = 120 + random_sec
     time.sleep(total_wait)
-
-    # Bot launch command bhejo
-    if bot == "1.5":
-        path = "Smartbot15\\Smartbot15\\Smart bot 1.5.exe"
-    else:
-        path = "Smartbot16\\Smartbot16\\Smart bot 1.6.exe"
-
-    bot_cmd = {
-        "id": str(uuid.uuid4())[:8],
-        "type": "launch_and_enter",
-        "payload": {"path": path, "wait1": 7, "wait2": 4},
-        "issued_at": now()
-    }
+    path = "Smartbot15\\Smartbot15\\Smart bot 1.5.exe" if bot == "1.5" else "Smartbot16\\Smartbot16\\Smart bot 1.6.exe"
+    bot_cmd = {"id": str(uuid.uuid4())[:8], "type": "launch_and_enter",
+               "payload": {"path": path, "wait1": 7, "wait2": 4}, "issued_at": now()}
     if target == "all":
         for aid in agents: commands[aid].append(bot_cmd)
     else:
         commands[target].append(bot_cmd)
 
 def schedule_loop(key):
-    """Repeating schedule loop"""
     while key in schedule_config:
         cfg = schedule_config.get(key)
         if not cfg: break
         interval_sec = cfg["intervalMs"] / 1000
         time.sleep(interval_sec)
-        if key in schedule_config:  # still active?
+        if key in schedule_config:
             t = threading.Thread(target=run_schedule_job, args=(key,))
             t.daemon = True
             t.start()
@@ -229,18 +212,12 @@ def save_schedule():
     data = request.json or {}
     key = data.get("target", "all")
     schedule_config[key] = {
-        "value": data.get("value", 2),
-        "unit": data.get("unit", "hours"),
-        "bot": data.get("bot", "1.5"),
-        "delayMin": data.get("delayMin", 2),
-        "delayMax": data.get("delayMax", 10),
-        "target": data.get("target", "all"),
-        "intervalMs": data.get("intervalMs", 7200000),
-        "created_at": now(),
+        "value": data.get("value", 2), "unit": data.get("unit", "hours"),
+        "bot": data.get("bot", "1.5"), "delayMin": data.get("delayMin", 2),
+        "delayMax": data.get("delayMax", 10), "target": data.get("target", "all"),
+        "intervalMs": data.get("intervalMs", 7200000), "created_at": now(),
     }
-    # Start loop thread
-    if key in schedule_timers:
-        del schedule_timers[key]  # old one will exit
+    if key in schedule_timers: del schedule_timers[key]
     t = threading.Thread(target=schedule_loop, args=(key,))
     t.daemon = True
     t.start()
@@ -251,13 +228,112 @@ def save_schedule():
 def stop_schedule():
     data = request.json or {}
     key = data.get("target", "all")
-    if key in schedule_config:
-        del schedule_config[key]
+    if key in schedule_config: del schedule_config[key]
     return jsonify({"message": "Schedule stopped"})
 
 @app.route("/api/schedule/get", methods=["GET"])
 def get_schedules():
     return jsonify(schedule_config)
+
+# ── AUTO PILOT API ────────────────────────────────────────────
+
+def send_cmd_to_all(cmd_type, payload={}):
+    """Server side command send karo sab agents ko"""
+    cmd = {"id": str(uuid.uuid4())[:8], "type": cmd_type,
+           "payload": payload, "issued_at": now()}
+    for aid in agents:
+        commands[aid].append(cmd)
+
+def send_close_bot():
+    """Close bot 1.5 command"""
+    close_cmd = String_raw = r'powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate(\'Smart bot 1.5\'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait(\'{ENTER}\'); Start-Sleep -Seconds 3; taskkill /f /fi \'WINDOWTITLE eq Smart bot 1.5*\'"'
+    cmd = {"id": str(uuid.uuid4())[:8], "type": "shell",
+           "payload": {"cmd": close_cmd}, "issued_at": now()}
+    for aid in agents:
+        commands[aid].append(cmd)
+
+def run_bot_batches():
+    """Bot 1.5 ko batches mein launch karo"""
+    agent_ids = list(agents.keys())
+    i = 0
+    while i < len(agent_ids):
+        batch_size = random.randint(3, 4)
+        batch = agent_ids[i:i+batch_size]
+        path = "Smartbot15\\Smartbot15\\Smart bot 1.5.exe"
+        bot_cmd = {"id": str(uuid.uuid4())[:8], "type": "launch_and_enter",
+                   "payload": {"path": path, "wait1": 7, "wait2": 4}, "issued_at": now()}
+        for aid in batch:
+            commands[aid].append(bot_cmd)
+        i += batch_size
+        wait_sec = random.randint(6, 9)
+        time.sleep(wait_sec)
+
+def autopilot_cycle(key):
+    """Ek autopilot cycle"""
+    cfg = autopilot_config.get(key)
+    if not cfg: return
+
+    close_wait = cfg["closeWait"] * 60   # minutes to seconds
+    run_wait = cfg["runWait"] * 60
+    interval_sec = cfg["intervalMs"] / 1000
+
+    while autopilot_running.get(key):
+        # Step 1: Wake All
+        system_state["mode"] = "wake"
+        for a in agents.values(): a["status"] = "online"
+
+        # Step 2: Close Bot
+        send_close_bot()
+
+        # Step 3: Wait close_wait
+        time.sleep(close_wait)
+        if not autopilot_running.get(key): break
+
+        # Step 4: Run Bot batches
+        run_bot_batches()
+
+        # Step 5: Wait run_wait
+        time.sleep(run_wait)
+        if not autopilot_running.get(key): break
+
+        # Step 6: Sleep All
+        system_state["mode"] = "sleep"
+        for a in agents.values(): a["status"] = "sleep"
+
+        # Step 7: Wait interval
+        time.sleep(interval_sec)
+
+@app.route("/api/autopilot/start", methods=["POST"])
+def autopilot_start():
+    data = request.json or {}
+    key = "main"
+    autopilot_config[key] = {
+        "closeWait": data.get("closeWait", 4),
+        "runWait": data.get("runWait", 5),
+        "intervalMs": data.get("intervalMs", 3600000),
+        "intervalVal": data.get("intervalVal", 1),
+        "intervalUnit": data.get("intervalUnit", "hours"),
+        "created_at": now(),
+    }
+    autopilot_running[key] = True
+    t = threading.Thread(target=autopilot_cycle, args=(key,))
+    t.daemon = True
+    t.start()
+    return jsonify({"message": "Auto Pilot started", "config": autopilot_config[key]})
+
+@app.route("/api/autopilot/stop", methods=["POST"])
+def autopilot_stop():
+    autopilot_running["main"] = False
+    if "main" in autopilot_config:
+        del autopilot_config["main"]
+    return jsonify({"message": "Auto Pilot stopped"})
+
+@app.route("/api/autopilot/get", methods=["GET"])
+def autopilot_get():
+    return jsonify({
+        "running": autopilot_running.get("main", False),
+        "config": autopilot_config.get("main", {})
+    })
 
 @app.route("/health")
 def health():
