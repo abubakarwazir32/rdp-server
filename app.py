@@ -245,13 +245,21 @@ def send_cmd_to_all(cmd_type, payload={}):
         commands[aid].append(cmd)
 
 def send_close_bot():
-    """Close bot 1.5 command"""
-    close_cmd = String_raw = r'powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate(\'Smart bot 1.5\'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait(\'{ENTER}\'); Start-Sleep -Seconds 3; taskkill /f /fi \'WINDOWTITLE eq Smart bot 1.5*\'"'
+    """Close bot 1.5 - same command as Close Bot button"""
+    close_cmd = (
+        'powershell -command "'
+        'Add-Type -AssemblyName Microsoft.VisualBasic; '
+        '[Microsoft.VisualBasic.Interaction]::AppActivate(\'Smart bot 1.5\'); '
+        'Start-Sleep -m 500; '
+        'Add-Type -AssemblyName System.Windows.Forms; '
+        '[System.Windows.Forms.SendKeys]::SendWait(\'{ENTER}\'); '
+        'Start-Sleep -Seconds 3; '
+        "taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'\""
+    )
     cmd = {"id": str(uuid.uuid4())[:8], "type": "shell",
            "payload": {"cmd": close_cmd}, "issued_at": now()}
-    for aid in agents:
+    for aid in list(agents.keys()):
         commands[aid].append(cmd)
-
 def run_bot_batches():
     """Bot 1.5 ko batches mein launch karo"""
     agent_ids = list(agents.keys())
@@ -290,6 +298,13 @@ def autopilot_cycle(key):
         # Step 2: Wake All
         system_state["mode"] = "wake"
         for a in agents.values(): a["status"] = "online"
+
+        # Step 2.5: 5 second wait - agents online hon phir close bhejo
+        elapsed = 0
+        while elapsed < 5:
+            if not autopilot_running.get(key): return
+            time.sleep(1)
+            elapsed += 1
 
         # Step 3: Close Bot
         send_close_bot()
