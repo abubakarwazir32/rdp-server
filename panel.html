@@ -628,12 +628,12 @@ async function checkScheduleStatus() {
   } catch(e) {}
 }
 
-// ── AUTO PILOT ───────────────────────────────────────────────
-let autoPilotTimer = null;
-let autoPilotRunning = false;
+// ── AUTO PILOT (SERVER SIDE) ─────────────────────────────────
+// Browser band ho to bhi chalta rahega!
 
 function openAutoPilot() {
   updateApInfo();
+  checkAutoPilotStatus();
   document.getElementById('autopilot-modal').classList.add('open');
 }
 
@@ -651,93 +651,57 @@ function updateApInfo() {
   document.getElementById('ap-info').innerHTML =
     `🔄 Har <b>${intervalVal} ${intervalUnit}</b> mein ek cycle<br>` +
     `⏳ Close wait: <b>${closeWait} min</b> | Run wait: <b>${runWait} min</b><br>` +
-    `📊 Total cycle time: <b>~${totalCycle} min</b>`;
-}
-
-async function runAutoPilotCycle() {
-  log('🤖 AUTO PILOT: Cycle shuru...', 'info');
-
-  // Step 1: Wake All
-  await fetch(`${BASE}/api/wake`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-  updateModeStatus('wake');
-  log('🤖 ⚡ Wake All', 'ok');
-
-  // Step 2: Close Bot 1.5
-  await sendCmd('shell', {cmd: String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`});
-  log('🤖 ✕ Close Bot 1.5 sent', 'warn');
-
-  // Step 3: Close wait
-  const closeWait = (parseInt(document.getElementById('ap-close-wait').value)||4) * 60 * 1000;
-  log(`🤖 ⏳ Waiting ${closeWait/60000} min for bots to close...`, 'info');
-  await new Promise(r => setTimeout(r, closeWait));
-
-  if(!autoPilotRunning) return; // stop check
-
-  // Step 4: Run Bot 1.5 (batch mode)
-  log('🤖 ▶ Run Bot 1.5 starting (batch)...', 'ok');
-  const targets = allAgents.map(a=>a.id);
-  let delay = 0;
-  for(let i = 0; i < targets.length; i += Math.floor(Math.random()*2)+3) {
-    const batch = targets.slice(i, i + Math.floor(Math.random()*2)+3);
-    const wait = Math.floor(Math.random()*3000)+6000;
-    const d = delay;
-    setTimeout(() => {
-      batch.forEach(aid => {
-        fetch(`${BASE}/api/command`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot15\\Smartbot15\\Smart bot 1.5.exe', wait1:7, wait2:4}})
-        });
-      });
-      log(`🤖 Batch → ${batch.length} RDPs`, 'ok');
-    }, d);
-    delay += wait;
-  }
-
-  // Step 5: Run wait
-  const runWait = (parseInt(document.getElementById('ap-run-wait').value)||5) * 60 * 1000;
-  log(`🤖 ⏳ Waiting ${runWait/60000} min for bots to start...`, 'info');
-  await new Promise(r => setTimeout(r, runWait));
-
-  if(!autoPilotRunning) return;
-
-  // Step 6: Sleep All
-  await fetch(`${BASE}/api/sleep`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-  updateModeStatus('sleep');
-  log('🤖 💤 Sleep All', 'warn');
-  log('🤖 ✅ Cycle complete!', 'ok');
+    `📊 Total cycle: <b>~${totalCycle} min</b><br>` +
+    `<span style="color:var(--accent)">✅ SERVER par save hoga — browser band ho to bhi chalega!</span>`;
 }
 
 async function startAutoPilot() {
-  if(autoPilotRunning) { notify('Auto Pilot already running!', true); return; }
-
+  const closeWait = parseInt(document.getElementById('ap-close-wait').value)||4;
+  const runWait = parseInt(document.getElementById('ap-run-wait').value)||5;
   const intervalVal = parseInt(document.getElementById('ap-interval-val').value)||1;
   const intervalUnit = document.getElementById('ap-interval-unit').value;
   const intervalMs = intervalUnit==='hours' ? intervalVal*3600000 : intervalVal*60000;
 
-  autoPilotRunning = true;
-  document.getElementById('autopilot-status').style.display = 'block';
-  document.getElementById('autopilot-status').textContent = `🤖 ${intervalVal} ${intervalUnit}`;
-  closeAutoPilot();
-
-  log(`🤖 AUTO PILOT started! Cycle every ${intervalVal} ${intervalUnit}`, 'ok');
-  notify(`🤖 Auto Pilot ON! Every ${intervalVal} ${intervalUnit}`);
-
-  // Pehla cycle abhi chalao
-  await runAutoPilotCycle();
-
-  // Phir repeat karo
-  autoPilotTimer = setInterval(async () => {
-    if(autoPilotRunning) await runAutoPilotCycle();
-  }, intervalMs);
+  try {
+    const r = await fetch(`${BASE}/api/autopilot/start`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({closeWait, runWait, intervalMs, intervalVal, intervalUnit})
+    });
+    const d = await r.json();
+    document.getElementById('autopilot-status').style.display = 'block';
+    document.getElementById('autopilot-status').textContent = `🤖 ${intervalVal} ${intervalUnit}`;
+    closeAutoPilot();
+    log(`🤖 AUTO PILOT started on SERVER! Every ${intervalVal} ${intervalUnit}`, 'ok');
+    notify(`🤖 Auto Pilot ON! Server par save hua`);
+  } catch(e) { notify('Auto Pilot start failed!', true); }
 }
 
-function stopAutoPilot() {
-  autoPilotRunning = false;
-  if(autoPilotTimer) { clearInterval(autoPilotTimer); autoPilotTimer = null; }
-  document.getElementById('autopilot-status').style.display = 'none';
-  closeAutoPilot();
-  log('🤖 AUTO PILOT stopped', 'warn');
-  notify('🤖 Auto Pilot OFF');
+async function stopAutoPilot() {
+  try {
+    await fetch(`${BASE}/api/autopilot/stop`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    document.getElementById('autopilot-status').style.display = 'none';
+    closeAutoPilot();
+    log('🤖 AUTO PILOT stopped on server', 'warn');
+    notify('🤖 Auto Pilot OFF');
+  } catch(e) { notify('Stop failed!', true); }
+}
+
+async function checkAutoPilotStatus() {
+  try {
+    const r = await fetch(`${BASE}/api/autopilot/get`);
+    const d = await r.json();
+    const el = document.getElementById('autopilot-status');
+    if(d.running && d.config) {
+      el.style.display = 'block';
+      el.textContent = `🤖 ${d.config.intervalVal} ${d.config.intervalUnit}`;
+      if(d.config.closeWait) document.getElementById('ap-close-wait').value = d.config.closeWait;
+      if(d.config.runWait) document.getElementById('ap-run-wait').value = d.config.runWait;
+      if(d.config.intervalVal) document.getElementById('ap-interval-val').value = d.config.intervalVal;
+      if(d.config.intervalUnit) document.getElementById('ap-interval-unit').value = d.config.intervalUnit;
+    } else {
+      el.style.display = 'none';
+    }
+  } catch(e) {}
 }
 
 // POLL
@@ -745,6 +709,8 @@ fetchAgents();
 setInterval(fetchAgents, 5000);
 checkMode();
 setInterval(checkMode, 10000);
+checkAutoPilotStatus();
+setInterval(checkAutoPilotStatus, 15000);
 checkScheduleStatus();
 setInterval(checkScheduleStatus, 15000);
 log('Admin panel initialized','ok');
