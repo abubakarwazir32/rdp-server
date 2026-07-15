@@ -261,21 +261,27 @@ def send_close_bot():
     for aid in list(agents.keys()):
         commands[aid].append(cmd)
 def run_bot_batches():
-    """Bot 1.5 ko batches mein launch karo"""
+    """Bot 1.5 batches mein launch - same as RUN BOT button"""
     agent_ids = list(agents.keys())
     i = 0
     while i < len(agent_ids):
         batch_size = random.randint(3, 4)
         batch = agent_ids[i:i+batch_size]
-        path = "Smartbot15\\Smartbot15\\Smart bot 1.5.exe"
-        bot_cmd = {"id": str(uuid.uuid4())[:8], "type": "launch_and_enter",
-                   "payload": {"path": path, "wait1": 7, "wait2": 4}, "issued_at": now()}
+        bot_cmd = {
+            "id": str(uuid.uuid4())[:8],
+            "type": "launch_and_enter",
+            "payload": {
+                "path": "Smartbot15\\Smartbot15\\Smart bot 1.5.exe",
+                "wait1": 7,
+                "wait2": 4
+            },
+            "issued_at": now()
+        }
         for aid in batch:
             commands[aid].append(bot_cmd)
         i += batch_size
         wait_sec = random.randint(6, 9)
         time.sleep(wait_sec)
-
 def autopilot_cycle(key):
     """Auto Pilot cycle - pehle interval wait, phir kaam"""
     cfg = autopilot_config.get(key)
