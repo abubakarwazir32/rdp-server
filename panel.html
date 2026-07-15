@@ -117,6 +117,8 @@
     <button onclick="removeOffline()" style="background:rgba(255,68,68,0.15);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(255,68,68,0.3)'" onmouseout="this.style.background='rgba(255,68,68,0.15)'">🗑 REMOVE OFFLINE</button>
     <button onclick="openScheduleModal()" style="background:rgba(255,204,0,0.15);border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(255,204,0,0.3)'" onmouseout="this.style.background='rgba(255,204,0,0.15)'">⏱ SET SCHEDULE</button>
     <div id="schedule-status" style="display:none;font-family:var(--font-mono);font-size:11px;color:var(--warn);border:1px solid var(--warn);padding:4px 10px;animation:blink 2s infinite;">⏱ SCHEDULE ON</div>
+    <button onclick="openAutoPilot()" id="autopilot-btn" style="background:rgba(0,204,255,0.15);border:1px solid var(--accent2);color:var(--accent2);font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.background='rgba(0,204,255,0.3)'" onmouseout="this.style.background='rgba(0,204,255,0.15)'">🤖 AUTO PILOT</button>
+    <div id="autopilot-status" style="display:none;font-family:var(--font-mono);font-size:11px;color:var(--accent2);border:1px solid var(--accent2);padding:4px 10px;">🤖 PILOT ON</div>
   </div>
 </div>
 
@@ -261,6 +263,58 @@
       <div style="display:flex;gap:8px;">
         <button onclick="saveSchedule()" style="flex:1;background:linear-gradient(135deg,rgba(255,204,0,0.2),rgba(255,150,0,0.1));border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">💾 START</button>
         <button onclick="stopSchedule()" style="flex:1;background:rgba(255,68,68,0.1);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">⏹ STOP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTO PILOT MODAL -->
+<div class="modal-overlay" id="autopilot-modal">
+  <div class="modal" style="min-width:440px;border-color:var(--accent2);">
+    <div class="modal-header" style="color:var(--accent2);">
+      <span>🤖 AUTO PILOT</span>
+      <button class="modal-close" onclick="closeAutoPilot()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);background:var(--bg3);padding:10px;border:1px solid var(--border);line-height:2;">
+        <b style="color:var(--accent2);">Cycle:</b><br>
+        ⚡ Wake All<br>
+        ✕ Close Bot 1.5 (sab band)<br>
+        ⏳ Wait (close wait)<br>
+        ▶ Run Bot 1.5 (sab start)<br>
+        ⏳ Wait (run wait)<br>
+        💤 Sleep All<br>
+        ⏳ Wait (cycle interval)<br>
+        🔁 Repeat...
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">CLOSE BOT WAIT (minutes)</div>
+        <input type="number" id="ap-close-wait" value="4" min="1" class="sch-input" style="width:100%;text-align:center;" oninput="updateApInfo()"/>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">RUN BOT WAIT (minutes)</div>
+        <input type="number" id="ap-run-wait" value="5" min="1" class="sch-input" style="width:100%;text-align:center;" oninput="updateApInfo()"/>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">CYCLE INTERVAL</div>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="ap-interval-val" value="1" min="1" class="sch-input" style="width:80px;text-align:center;" oninput="updateApInfo()"/>
+          <select id="ap-interval-unit" class="sch-select" onchange="updateApInfo()">
+            <option value="minutes">MINUTES</option>
+            <option value="hours" selected>HOURS</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="ap-info" style="font-family:var(--font-mono);font-size:11px;color:var(--accent2);background:var(--bg3);padding:10px;border:1px solid rgba(0,204,255,0.3);line-height:1.8;"></div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="startAutoPilot()" style="flex:1;background:linear-gradient(135deg,rgba(0,204,255,0.2),rgba(0,255,136,0.1));border:1px solid var(--accent2);color:var(--accent2);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">🚀 START</button>
+        <button onclick="stopAutoPilot()" style="flex:1;background:rgba(255,68,68,0.1);border:1px solid var(--red);color:var(--red);font-family:var(--font-mono);font-size:13px;padding:12px;cursor:pointer;letter-spacing:2px;">⏹ STOP</button>
       </div>
     </div>
   </div>
@@ -572,6 +626,118 @@ async function checkScheduleStatus() {
       el.style.display = 'none';
     }
   } catch(e) {}
+}
+
+// ── AUTO PILOT ───────────────────────────────────────────────
+let autoPilotTimer = null;
+let autoPilotRunning = false;
+
+function openAutoPilot() {
+  updateApInfo();
+  document.getElementById('autopilot-modal').classList.add('open');
+}
+
+function closeAutoPilot() {
+  document.getElementById('autopilot-modal').classList.remove('open');
+}
+
+function updateApInfo() {
+  const closeWait = parseInt(document.getElementById('ap-close-wait').value)||4;
+  const runWait = parseInt(document.getElementById('ap-run-wait').value)||5;
+  const intervalVal = parseInt(document.getElementById('ap-interval-val').value)||1;
+  const intervalUnit = document.getElementById('ap-interval-unit').value;
+  const intervalMin = intervalUnit==='hours' ? intervalVal*60 : intervalVal;
+  const totalCycle = closeWait + runWait + intervalMin;
+  document.getElementById('ap-info').innerHTML =
+    `🔄 Har <b>${intervalVal} ${intervalUnit}</b> mein ek cycle<br>` +
+    `⏳ Close wait: <b>${closeWait} min</b> | Run wait: <b>${runWait} min</b><br>` +
+    `📊 Total cycle time: <b>~${totalCycle} min</b>`;
+}
+
+async function runAutoPilotCycle() {
+  log('🤖 AUTO PILOT: Cycle shuru...', 'info');
+
+  // Step 1: Wake All
+  await fetch(`${BASE}/api/wake`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  updateModeStatus('wake');
+  log('🤖 ⚡ Wake All', 'ok');
+
+  // Step 2: Close Bot 1.5
+  await sendCmd('shell', {cmd: String.raw`powershell -command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate('Smart bot 1.5'); Start-Sleep -m 500; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{ENTER}'); Start-Sleep -Seconds 3; taskkill /f /fi 'WINDOWTITLE eq Smart bot 1.5*'"`});
+  log('🤖 ✕ Close Bot 1.5 sent', 'warn');
+
+  // Step 3: Close wait
+  const closeWait = (parseInt(document.getElementById('ap-close-wait').value)||4) * 60 * 1000;
+  log(`🤖 ⏳ Waiting ${closeWait/60000} min for bots to close...`, 'info');
+  await new Promise(r => setTimeout(r, closeWait));
+
+  if(!autoPilotRunning) return; // stop check
+
+  // Step 4: Run Bot 1.5 (batch mode)
+  log('🤖 ▶ Run Bot 1.5 starting (batch)...', 'ok');
+  const targets = allAgents.map(a=>a.id);
+  let delay = 0;
+  for(let i = 0; i < targets.length; i += Math.floor(Math.random()*2)+3) {
+    const batch = targets.slice(i, i + Math.floor(Math.random()*2)+3);
+    const wait = Math.floor(Math.random()*3000)+6000;
+    const d = delay;
+    setTimeout(() => {
+      batch.forEach(aid => {
+        fetch(`${BASE}/api/command`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({target:aid, type:'launch_and_enter', payload:{path:'Smartbot15\\Smartbot15\\Smart bot 1.5.exe', wait1:7, wait2:4}})
+        });
+      });
+      log(`🤖 Batch → ${batch.length} RDPs`, 'ok');
+    }, d);
+    delay += wait;
+  }
+
+  // Step 5: Run wait
+  const runWait = (parseInt(document.getElementById('ap-run-wait').value)||5) * 60 * 1000;
+  log(`🤖 ⏳ Waiting ${runWait/60000} min for bots to start...`, 'info');
+  await new Promise(r => setTimeout(r, runWait));
+
+  if(!autoPilotRunning) return;
+
+  // Step 6: Sleep All
+  await fetch(`${BASE}/api/sleep`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  updateModeStatus('sleep');
+  log('🤖 💤 Sleep All', 'warn');
+  log('🤖 ✅ Cycle complete!', 'ok');
+}
+
+async function startAutoPilot() {
+  if(autoPilotRunning) { notify('Auto Pilot already running!', true); return; }
+
+  const intervalVal = parseInt(document.getElementById('ap-interval-val').value)||1;
+  const intervalUnit = document.getElementById('ap-interval-unit').value;
+  const intervalMs = intervalUnit==='hours' ? intervalVal*3600000 : intervalVal*60000;
+
+  autoPilotRunning = true;
+  document.getElementById('autopilot-status').style.display = 'block';
+  document.getElementById('autopilot-status').textContent = `🤖 ${intervalVal} ${intervalUnit}`;
+  closeAutoPilot();
+
+  log(`🤖 AUTO PILOT started! Cycle every ${intervalVal} ${intervalUnit}`, 'ok');
+  notify(`🤖 Auto Pilot ON! Every ${intervalVal} ${intervalUnit}`);
+
+  // Pehla cycle abhi chalao
+  await runAutoPilotCycle();
+
+  // Phir repeat karo
+  autoPilotTimer = setInterval(async () => {
+    if(autoPilotRunning) await runAutoPilotCycle();
+  }, intervalMs);
+}
+
+function stopAutoPilot() {
+  autoPilotRunning = false;
+  if(autoPilotTimer) { clearInterval(autoPilotTimer); autoPilotTimer = null; }
+  document.getElementById('autopilot-status').style.display = 'none';
+  closeAutoPilot();
+  log('🤖 AUTO PILOT stopped', 'warn');
+  notify('🤖 Auto Pilot OFF');
 }
 
 // POLL
